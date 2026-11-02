@@ -1,0 +1,4 @@
+com\arogya\User.class
+com\arogya\SupabaseConnection.class
+com\arogya\UserController.class
+com\arogya\ArogyaApplication.class
