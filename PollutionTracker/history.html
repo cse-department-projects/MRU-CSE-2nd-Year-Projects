@@ -1,0 +1,99 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pollution History | Pollution Tracker</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 30px;
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin-bottom: 35px;
+    }
+    h1 { color: #4ade80; }
+    a {
+      color: #4ade80;
+      text-decoration: none;
+      margin-right: 15px;
+    }
+    .panel {
+      background: #1e293b;
+      padding: 24px;
+      border-radius: 16px;
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 550px;
+    }
+    th, td {
+      padding: 16px;
+      text-align: left;
+      border-bottom: 1px solid #334155;
+    }
+    th { color: #4ade80; }
+    .note {
+      color: #cbd5e1;
+      margin-top: 20px;
+      font-size: 14px;
+    }
+    button {
+      padding: 10px 16px;
+      background: #22c55e;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🌿 Pollution History</h1>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="dashboard.html">Dashboard</a>
+    </nav>
+  </header>
+
+  <section class="panel">
+    <h2>Previous Pollution Records</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>City</th>
+          <th>AQI</th>
+          <th>PM2.5</th>
+          <th>PM10</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody id="historyTable">
+        <tr>
+          <td colspan="5">No saved records yet.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="note">
+      This page will display saved readings after data storage is connected.
+      No live pollution records have been added yet.
+    </p>
+    <button onclick="location.href='dashboard.html'">
+      Back to Dashboard
+    </button>
+  </section>
+</body>
+</html>

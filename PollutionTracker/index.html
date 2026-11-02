@@ -1,0 +1,444 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pollution Tracker | Clean Earth</title>
+
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+</head>
+
+<body>
+
+    <div class="background-glow glow-one"></div>
+    <div class="background-glow glow-two"></div>
+
+    <header class="navbar">
+        <a href="#home" class="logo">
+            <span class="logo-icon"><i class="fa-solid fa-leaf"></i></span>
+            <span>Pollution<span class="green">Tracker</span></span>
+        </a>
+
+        <nav class="nav-links" id="navLinks">
+            <a href="#home">Home</a>
+            <a href="#features">Features</a>
+            <a href="#about">About</a>
+        </nav>
+
+        <div class="nav-actions">
+            <a href="#" class="login-link" onclick="showLogin(event)">Log in</a>
+            <a href="#" class="nav-button" onclick="showSignup(event)">
+                Get Started <i class="fa-solid fa-arrow-right"></i>
+            </a>
+        </div>
+
+        <button class="menu-toggle" onclick="toggleMenu()" aria-label="Toggle navigation">
+            <i class="fa-solid fa-bars"></i>
+        </button>
+    </header>
+
+    <main>
+
+        <!-- HERO SECTION -->
+        <section class="hero" id="home">
+            <div class="hero-content">
+
+                <div class="announcement">
+                    <span class="pulse-dot"></span>
+                    YOUR PLANET. YOUR FUTURE.
+                </div>
+
+                <h1>Breathe Better.<br>Live <span class="gradient-text">Greener.</span></h1>
+
+                <p class="hero-description">
+                    Discover the air around you. Track pollution levels,
+                    monitor air quality, and make smarter decisions for
+                    a cleaner, healthier tomorrow.
+                </p>
+
+                <div class="hero-buttons">
+                    <a href="dashboard.html#dashboard" class="primary-button">
+                        Explore Dashboard
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </a>
+
+                    <a href="#about" class="secondary-button">
+                        <i class="fa-regular fa-circle-play"></i>
+                        Learn More
+                    </a>
+                </div>
+
+                <div class="hero-stats">
+                    <div class="stat">
+                        <i class="fa-solid fa-earth-asia"></i>
+                        <div>
+                            <h3>Our Planet</h3>
+                            <p>One shared home</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-divider"></div>
+
+                    <div class="stat">
+                        <i class="fa-solid fa-wind"></i>
+                        <div>
+                            <h3>Air Insights</h3>
+                            <p>Understand your air</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hero-visual">
+                <div class="orbit orbit-one"></div>
+                <div class="orbit orbit-two"></div>
+
+                <div class="earth-card">
+                    <div class="earth-top">
+                        <span><i class="fa-solid fa-earth-asia"></i> EARTH MONITOR</span>
+                        <span class="live-indicator"><span></span> PLANET VIEW</span>
+                    </div>
+
+                    <div class="earth-art">
+                        <div class="css-earth">
+                            <div class="earth-continent continent-one"></div>
+                            <div class="earth-continent continent-two"></div>
+                            <div class="earth-continent continent-three"></div>
+                            <div class="earth-clouds"></div>
+                            <div class="earth-shine"></div>
+                        </div>
+                    </div>
+
+                    <div class="earth-message">
+                        <span class="small-label">A HEALTHIER TOMORROW</span>
+                        <h2>Every Breath<br>Matters.</h2>
+                        <p>Small actions. Cleaner air. Better lives.</p>
+                    </div>
+
+                    <div class="floating-icon floating-leaf">
+                        <i class="fa-solid fa-leaf"></i>
+                    </div>
+
+                    <div class="floating-icon floating-wind">
+                        <i class="fa-solid fa-wind"></i>
+                    </div>
+                </div>
+
+                <div class="mini-card mini-card-top">
+                    <i class="fa-solid fa-seedling"></i>
+                    <div>
+                        <strong>Think Green</strong>
+                        <span>Act for tomorrow</span>
+                    </div>
+                </div>
+
+                <div class="mini-card mini-card-bottom">
+                    <div class="mini-icon">
+                        <i class="fa-solid fa-heart-pulse"></i>
+                    </div>
+                    <div>
+                        <strong>Healthy Living</strong>
+                        <span>Starts with clean air</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FEATURES SECTION -->
+        <section class="features-section" id="features">
+            <div class="section-heading">
+                <span class="section-tag">SMART ENVIRONMENTAL MONITORING</span>
+
+                <h2>
+                    Everything you need to
+                    <span class="gradient-text">breathe easy.</span>
+                </h2>
+
+                <p>
+                    Your environment, explained through useful insights
+                    and intelligent tools.
+                </p>
+            </div>
+
+            <div class="feature-grid">
+
+                <!-- AIR QUALITY INDEX -->
+                <article class="feature-card">
+                    <div class="feature-icon green-icon">
+                        <i class="fa-solid fa-wind"></i>
+                    </div>
+
+                    <h3>Air Quality Index</h3>
+
+                    <p>
+                        Understand AQI levels and what they mean
+                        for your everyday health.
+                    </p>
+
+                    <a href="dashboard.html#dashboard">
+                        Explore feature
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </a>
+                </article>
+
+                <!-- LIVE INSIGHTS -->
+                <article class="feature-card">
+                    <div class="feature-icon blue-icon">
+                        <i class="fa-solid fa-chart-line"></i>
+                    </div>
+
+                    <h3>Live Insights</h3>
+
+                    <p>
+                        Build a clearer picture of environmental
+                        conditions with visual reports.
+                    </p>
+
+                    <a href="dashboard.html#reports">
+                        Explore feature
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </a>
+                </article>
+
+                <!-- SMART ALERTS -->
+                <article class="feature-card">
+                    <div class="feature-icon orange-icon">
+                        <i class="fa-solid fa-bell"></i>
+                    </div>
+
+                    <h3>Smart Alerts</h3>
+
+                    <p>
+                        Get useful warnings when monitored pollution
+                        levels become concerning.
+                    </p>
+
+                    <a href="dashboard.html#alerts">
+                        Explore feature
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </a>
+                </article>
+
+                <!-- CITY MONITORING -->
+                <article class="feature-card">
+                    <div class="feature-icon purple-icon">
+                        <i class="fa-solid fa-map-location-dot"></i>
+                    </div>
+
+                    <h3>City Monitoring</h3>
+
+                    <p>
+                        Compare locations and explore environmental
+                        conditions by city.
+                    </p>
+
+                    <a href="dashboard.html#monitoring">
+                        Explore feature
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </a>
+                </article>
+
+            </div>
+        </section>
+
+        <!-- ABOUT SECTION -->
+        <section class="about-section" id="about">
+            <div class="about-icon">
+                <i class="fa-solid fa-earth-americas"></i>
+            </div>
+
+            <div>
+                <span class="section-tag">OUR MISSION</span>
+
+                <h2>
+                    A cleaner planet begins with
+                    <span class="gradient-text">awareness.</span>
+                </h2>
+
+                <p>
+                    Pollution Tracker aims to make environmental
+                    information easier to understand so people can
+                    make informed choices for a healthier future.
+                </p>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer>
+        <a href="#home" class="logo footer-logo">
+            <span class="logo-icon"><i class="fa-solid fa-leaf"></i></span>
+            <span>Pollution<span class="green">Tracker</span></span>
+        </a>
+
+        <p>
+            Made for a greener tomorrow
+            <i class="fa-solid fa-heart green"></i>
+        </p>
+
+        <p class="copyright">© 2026 Pollution Tracker</p>
+    </footer>
+
+    <!-- EXISTING LOGIN / SIGNUP MODAL -->
+    <div class="modal" id="authModal" aria-hidden="true">
+        <div class="modal-card">
+            <button class="modal-close" onclick="closeModal()" aria-label="Close">
+                &times;
+            </button>
+
+            <div class="modal-logo">
+                <i class="fa-solid fa-leaf"></i>
+            </div>
+
+            <h2 id="modalTitle">Welcome Back</h2>
+
+            <p id="modalSubtitle">
+                Sign in to continue to your environmental dashboard.
+            </p>
+
+            <form id="authForm">
+                <div id="nameField" class="form-field" hidden>
+                    <label for="name">Full name</label>
+                    <input id="name" type="text" placeholder="Enter your name" autocomplete="name">
+                </div>
+
+                <div class="form-field">
+                    <label for="email">Email address</label>
+                    <input id="email" type="email" placeholder="you@example.com" required autocomplete="email">
+                </div>
+
+                <div class="form-field">
+                    <label for="password">Password</label>
+                    <input id="password" type="password" placeholder="Enter password" required minlength="6" autocomplete="current-password">
+                </div>
+
+                <button type="submit" class="primary-button modal-submit" id="submitButton">
+                    Log in
+                </button>
+            </form>
+
+            <p class="switch-auth" id="switchAuth">
+                New here?
+                <a href="#" onclick="showSignup(event)">Create an account</a>
+            </p>
+
+            <p id="authMessage" class="auth-message" role="status"></p>
+        </div>
+    </div>
+
+    <!-- EXISTING SIGNUP / LOGIN POPUP -->
+    <div class="modal" id="signupModal">
+        <div class="auth-popup">
+
+            <button class="auth-close" type="button" onclick="closeModal()" aria-label="Close">
+                &times;
+            </button>
+
+            <div class="auth-logo">🌿</div>
+
+            <h2 id="authTitle">Join Pollution Tracker</h2>
+
+            <p class="auth-subtitle" id="authSubtitle">
+                Create an account for a cleaner future.
+            </p>
+
+            <div class="auth-tabs">
+                <button type="button" class="auth-tab active" id="signupTab" onclick="switchAuth('signup')">
+                    Sign Up
+                </button>
+
+                <button type="button" class="auth-tab" id="loginTab" onclick="switchAuth('login')">
+                    Login
+                </button>
+            </div>
+
+            <form id="signupForm">
+                <div class="auth-field" id="signupNameField">
+                    <label for="authName">Full Name</label>
+                    <input type="text" id="authName" placeholder="Enter your full name" autocomplete="name" required>
+                </div>
+
+                <div class="auth-field">
+                    <label for="authEmail">Email Address</label>
+                    <input type="email" id="authEmail" placeholder="Enter your email" autocomplete="email" required>
+                </div>
+
+                <div class="auth-field">
+                    <label for="authPassword">Password</label>
+                    <input type="password" id="authPassword" placeholder="At least 6 characters" minlength="6" autocomplete="new-password" required>
+                </div>
+
+                <button class="auth-submit" type="submit" id="authSubmit">
+                    Create Account →
+                </button>
+
+                <p class="auth-message" id="signupMessage" aria-live="polite"></p>
+            </form>
+
+            <p class="auth-footer">
+                Together, we can build a cleaner planet 🌍
+            </p>
+
+        </div>
+    </div>
+
+    
+<script src="script.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const modal = document.getElementById("signupModal");
+
+    window.showSignup = function (event) {
+        if (event) event.preventDefault();
+
+        if (modal) {
+            modal.style.display = "flex";
+            modal.classList.add("active");
+            modal.setAttribute("aria-hidden", "false");
+        }
+
+        if (typeof window.switchAuth === "function") {
+            window.switchAuth("signup");
+        }
+    };
+
+    window.showLogin = function (event) {
+        if (event) event.preventDefault();
+
+        if (modal) {
+            modal.style.display = "flex";
+            modal.classList.add("active");
+            modal.setAttribute("aria-hidden", "false");
+        }
+
+        if (typeof window.switchAuth === "function") {
+            window.switchAuth("login");
+        }
+    };
+
+    window.closeModal = function () {
+        document.querySelectorAll(".modal").forEach(function (item) {
+            item.style.display = "none";
+            item.classList.remove("active");
+            item.setAttribute("aria-hidden", "true");
+        });
+    };
+
+    if (modal) {
+        modal.addEventListener("click", function (event) {
+            if (event.target === modal) {
+                window.closeModal();
+            }
+        });
+    }
+});
+</script>
+
+</body>
+</html>

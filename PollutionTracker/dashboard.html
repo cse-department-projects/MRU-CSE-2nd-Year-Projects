@@ -1,0 +1,896 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pollution Tracker | Smart Air Quality Dashboard</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+*{box-sizing:border-box;scroll-behavior:smooth}
+:root{
+  --bg:#0b1426;
+  --sidebar:#101e33;
+  --panel:#142239;
+  --panel2:#0d192c;
+  --border:#283c55;
+  --text:#f1f5f9;
+  --muted:#94a3b8;
+  --accent:#38d9b1;
+  --blue:#60a5fa;
+}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Poppins,sans-serif}
+button,input{font:inherit}
+button{border:0;border-radius:10px;padding:12px 17px;cursor:pointer;font-weight:600;background:var(--accent);color:#09251d}
+button:hover{filter:brightness(1.1)}
+button:disabled{opacity:.55;cursor:wait}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+a{color:inherit}
+.app{min-height:100vh}
+.sidebar{
+  width:248px;position:fixed;inset:0 auto 0 0;
+  padding:26px 16px;background:var(--sidebar);
+  border-right:1px solid var(--border);display:flex;
+  flex-direction:column;z-index:10;overflow-y:auto
+}
+.logo{font-size:20px;font-weight:700;color:var(--accent);padding:0 10px 28px}
+.logo i{margin-right:9px}
+.nav-label{font-size:10px;letter-spacing:1.5px;color:#64748b;padding:8px 12px}
+.nav-link{
+  display:flex;align-items:center;gap:13px;padding:12px 14px;
+  margin:3px 0;border-radius:10px;text-decoration:none;
+  color:#cbd5e1;font-size:13px;transition:.2s
+}
+.nav-link i{width:19px;text-align:center;font-size:15px}
+.nav-link:hover,.nav-link.active{background:#1d354c;color:var(--accent)}
+.sidebar-bottom{margin-top:auto;padding-top:25px}
+.sidebar-note{padding:14px;background:var(--panel);border:1px solid var(--border);border-radius:12px;color:var(--muted);font-size:11px;line-height:1.7}
+.workspace{margin-left:248px;min-width:0}
+.topbar{
+  min-height:76px;padding:17px 32px;display:flex;align-items:center;
+  justify-content:space-between;gap:15px;flex-wrap:wrap;
+  background:#101d31;border-bottom:1px solid var(--border)
+}
+.topbar-title{font-size:14px;color:#cbd5e1}
+.topbar-title i{color:var(--accent);margin-right:8px}
+.live-pill{font-size:11px;color:var(--accent);background:#103b35;padding:8px 12px;border-radius:30px}
+.live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent);margin-right:7px}
+main{max-width:1500px;margin:auto;padding:30px}
+.page-section{scroll-margin-top:22px;margin-bottom:27px}
+.page-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+h1{font-size:27px;margin:0 0 7px}
+h2{font-size:18px;margin:0 0 9px}
+h3{font-size:14px}
+.subtitle{color:var(--muted);font-size:12px;line-height:1.8;margin:0}
+.panel,.metric{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:22px}
+.panel{margin-bottom:22px}
+.search-row{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
+input{flex:1;min-width:170px;padding:13px;border:1px solid #40516b;border-radius:10px;background:#0c1729;color:white;outline:none}
+.secondary{background:#263b55;color:white}
+#status{margin-top:13px;color:var(--muted);font-size:12px;min-height:18px}
+.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:22px}
+.metric{min-height:157px;padding:20px}
+.metric .symbol{font-size:24px;color:var(--accent)}
+.metric h3{font-size:12px;font-weight:500;color:#cbd5e1;margin:12px 0 7px}
+.value{font-size:30px;font-weight:700;margin:5px 0}
+.metric small{color:var(--muted);font-size:10px}
+#aqiLabel{font-size:11px;font-weight:600}
+.content-grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:20px}
+.chart-toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:17px}
+.chart-toolbar button{padding:8px 12px;font-size:11px}
+.chart-toolbar button.active{background:var(--blue);color:#071426}
+.chart-wrap{height:310px;position:relative;margin-top:20px}
+.chart-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:14px}
+.chart-stat{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:11px}
+.chart-stat span{display:block;color:var(--muted);font-size:10px}
+.chart-stat strong{display:block;font-size:15px;margin-top:6px}
+.chart-note{font-size:11px;color:var(--muted);line-height:1.7;margin-top:12px}
+.weather-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:20px}
+.weather-box{background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:16px}
+.weather-box span{display:block;color:var(--muted);font-size:11px}
+.weather-box strong{display:block;font-size:23px;margin:8px 0}
+#weatherStatus{color:var(--muted);font-size:11px;margin-top:17px;line-height:1.7}
+#map{width:100%;height:310px;border:0;border-radius:12px;margin-top:16px;background:#0c1729}
+.station-info{color:#cbd5e1;font-size:12px;line-height:1.8}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;margin-top:17px;font-size:12px;min-width:540px}
+th,td{text-align:left;padding:13px;border-bottom:1px solid #2c3c53;white-space:nowrap}
+th{color:var(--accent);font-weight:600}
+td{color:#cbd5e1}
+.empty-cell{text-align:center;color:var(--muted);padding:24px}
+.action-row{display:flex;gap:9px;flex-wrap:wrap;margin-top:18px}
+.small-btn{font-size:11px;padding:9px 12px}
+.alert-card{display:flex;align-items:flex-start;gap:14px;padding:17px;border:1px solid var(--border);background:var(--panel2);border-radius:12px;margin-top:13px}
+.alert-icon{width:38px;height:38px;flex-shrink:0;border-radius:10px;display:grid;place-items:center;background:#1c354a;color:var(--accent)}
+.alert-card strong{font-size:13px}
+.alert-card p{font-size:11px;color:var(--muted);line-height:1.8;margin:5px 0 0}
+.report-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:18px}
+.report-stat{padding:18px;background:var(--panel2);border:1px solid var(--border);border-radius:12px}
+.report-stat span{display:block;font-size:11px;color:var(--muted)}
+.report-stat strong{display:block;font-size:25px;margin-top:8px}
+.report-stat small{display:block;color:var(--muted);font-size:10px;margin-top:5px}
+.badge{display:inline-block;padding:5px 9px;border-radius:20px;font-size:10px;background:#263b55;color:#cbd5e1}
+.footer{text-align:center;padding:25px;color:#64748b;font-size:11px;border-top:1px solid var(--border)}
+.menu-btn{display:none}
+@media(max-width:1100px){
+  .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .content-grid{grid-template-columns:1fr}
+}
+@media(max-width:700px){
+  .sidebar{width:100%;height:auto;position:relative;inset:auto;padding:14px}
+  .logo{padding:5px 8px 14px}
+  .nav-label,.sidebar-bottom{display:none}
+  .sidebar nav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
+  .nav-link{justify-content:center;flex-direction:column;gap:5px;padding:10px 4px;font-size:10px;text-align:center;margin:0}
+  .nav-link i{font-size:15px}
+  .workspace{margin-left:0}
+  .topbar{padding:14px 18px;min-height:60px}
+  main{padding:20px 14px}
+  h1{font-size:23px}
+  .panel{padding:17px}
+  .metrics{gap:10px}
+  .metric{padding:15px;min-height:145px}
+  .value{font-size:25px}
+  .chart-wrap{height:260px}
+  .report-grid{grid-template-columns:1fr}
+}
+@media(max-width:380px){
+  .sidebar nav{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .metrics{grid-template-columns:1fr}
+  .chart-summary{grid-template-columns:1fr}
+}
+</style>
+</head>
+
+<body>
+<div class="app">
+
+<aside class="sidebar">
+  <div class="logo"><i class="fa-solid fa-leaf"></i>Pollution Tracker</div>
+  <div class="nav-label">MAIN MENU</div>
+
+  <nav aria-label="Main navigation">
+    <a class="nav-link active" href="#dashboard"><i class="fa-solid fa-house"></i>Dashboard</a>
+    <a class="nav-link" href="#monitoring"><i class="fa-solid fa-chart-line"></i>Monitoring</a>
+    <a class="nav-link" href="#history"><i class="fa-solid fa-clock-rotate-left"></i>History</a>
+    <a class="nav-link" href="#alerts"><i class="fa-solid fa-bell"></i>Alerts & Warnings</a>
+    <a class="nav-link" href="#pollution-map"><i class="fa-solid fa-map-location-dot"></i>Pollution Map</a>
+    <a class="nav-link" href="#reports"><i class="fa-solid fa-file-chart-column"></i>Reports & Analytics</a>
+  </nav>
+
+  <div class="sidebar-bottom">
+    <div class="sidebar-note">
+      <i class="fa-solid fa-circle-info"></i>
+      <strong style="color:#cbd5e1"> Data information</strong>
+      <p style="margin:8px 0 0">Air-quality values are Open-Meteo model estimates. This application does not represent a certified local monitoring station.</p>
+    </div>
+    <a class="nav-link" href="index.html" style="margin-top:12px">
+      <i class="fa-solid fa-arrow-left"></i>Back to Home
+    </a>
+  </div>
+</aside>
+
+<div class="workspace">
+  <header class="topbar">
+    <div class="topbar-title"><i class="fa-solid fa-wind"></i>Environmental Monitoring System</div>
+    <div class="live-pill"><span class="live-dot"></span>API DATA DASHBOARD</div>
+  </header>
+
+  <main>
+
+    <section class="page-section" id="dashboard">
+      <div class="page-heading">
+        <div>
+          <h1>Air Quality Dashboard</h1>
+          <p class="subtitle">Monitor air-quality estimates, weather conditions and pollution trends for your selected city.</p>
+        </div>
+        <button id="refreshBtn" class="secondary" type="button"><i class="fa-solid fa-rotate"></i> Refresh Data</button>
+      </div>
+
+      <section class="panel">
+        <h2><i class="fa-solid fa-magnifying-glass" style="color:var(--accent)"></i> Search Your City</h2>
+        <p class="subtitle">Enter a city to retrieve current modelled air-quality data and weather.</p>
+        <div class="search-row">
+          <input id="cityInput" placeholder="Enter city name" aria-label="City name">
+          <button id="searchBtn" type="button">Search City <i class="fa-solid fa-arrow-right"></i></button>
+        </div>
+        <div id="status" role="status" aria-live="polite">Enter a city name and click Search City to load data.</div>
+      </section>
+
+      <section class="metrics" aria-label="Current readings">
+        <div class="metric">
+          <div class="symbol">🌫️</div>
+          <h3>Air Quality Index (US AQI)</h3>
+          <div class="value" id="aqi">--</div>
+          <div id="aqiLabel">Waiting for data</div>
+          <small>Open-Meteo air-quality model</small>
+        </div>
+        <div class="metric">
+          <div class="symbol">🔬</div>
+          <h3>PM2.5 Concentration</h3>
+          <div class="value" id="pm25">--</div>
+          <small>µg/m³ · Model estimate</small>
+        </div>
+        <div class="metric">
+          <div class="symbol">🏭</div>
+          <h3>PM10 Concentration</h3>
+          <div class="value" id="pm10">--</div>
+          <small>µg/m³ · Model estimate</small>
+        </div>
+        <div class="metric">
+          <div class="symbol">🌡️</div>
+          <h3>Temperature</h3>
+          <div class="value" id="temperature">--</div>
+          <small>°C · Weather data</small>
+        </div>
+      </section>
+    </section>
+
+    <section class="page-section" id="monitoring">
+      <div class="page-heading">
+        <div>
+          <h1>Live Monitoring</h1>
+          <p class="subtitle">Explore hourly trends and the latest weather information for your selected location.</p>
+        </div>
+        <span class="badge">Hourly model data</span>
+      </div>
+
+      <div class="content-grid">
+        <section class="panel">
+          <h2><i class="fa-solid fa-chart-area" style="color:var(--accent)"></i> Advanced Air Quality Analytics</h2>
+          <p class="subtitle">Switch between the AQI trend, particulate trends and pollutant comparison.</p>
+          <div class="chart-toolbar" role="group" aria-label="Choose air quality chart">
+            <button type="button" class="active" data-chart-mode="aqi">Air Quality Trend</button>
+            <button type="button" class="secondary" data-chart-mode="pm25">PM2.5 Trend</button>
+            <button type="button" class="secondary" data-chart-mode="pm10">PM10 Trend</button>
+            <button type="button" class="secondary" data-chart-mode="compare">Compare Pollutants</button>
+          </div>
+          <div class="chart-wrap"><canvas id="airChart" aria-label="Air quality trend chart"></canvas></div>
+          <div class="chart-summary">
+            <div class="chart-stat"><span>Latest US AQI</span><strong id="chartAqi">--</strong></div>
+            <div class="chart-stat"><span>Latest PM2.5</span><strong id="chartPm25">--</strong></div>
+            <div class="chart-stat"><span>Latest PM10</span><strong id="chartPm10">--</strong></div>
+          </div>
+          <p class="chart-note" id="chartNote">Hourly model data will appear after a city is loaded.</p>
+        </section>
+
+        <section class="panel">
+          <h2><i class="fa-solid fa-cloud-sun" style="color:var(--accent)"></i> Weather Details</h2>
+          <p class="subtitle">Weather information is retrieved separately from air quality.</p>
+          <div class="weather-row">
+            <div class="weather-box"><span>Humidity</span><strong id="humidity">--</strong><span>Relative humidity</span></div>
+            <div class="weather-box"><span>Wind Speed</span><strong id="wind">--</strong><span>km/h</span></div>
+          </div>
+          <p id="weatherStatus">Weather not loaded yet.</p>
+        </section>
+      </div>
+    </section>
+
+    <section class="page-section" id="alerts">
+      <div class="page-heading">
+        <div>
+          <h1>Alerts & Warnings</h1>
+          <p class="subtitle">Air-quality guidance based on the latest available US AQI returned by the API.</p>
+        </div>
+      </div>
+      <section class="panel">
+        <h2><i class="fa-solid fa-bell" style="color:var(--accent)"></i> Current Air Quality Advisory</h2>
+        <p class="subtitle">These are on-page notices, not push notifications or emergency alerts.</p>
+        <div id="alertContent" aria-live="polite">
+          <div class="alert-card"><div class="alert-icon"><i class="fa-solid fa-spinner"></i></div><div><strong>Waiting for air-quality data</strong><p>Search for a city to see its current advisory.</p></div></div>
+        </div>
+      </section>
+    </section>
+
+    <section class="page-section" id="pollution-map">
+      <div class="page-heading">
+        <div>
+          <h1>Pollution Map</h1>
+          <p class="subtitle">View the approximate geographic area of your selected city.</p>
+        </div>
+      </div>
+      <section class="panel">
+        <h2><i class="fa-solid fa-map-location-dot" style="color:var(--accent)"></i> Monitoring Location</h2>
+        <p class="station-info" id="stationName">City location will appear here.</p>
+        <p class="station-info" id="reported">Model timestamp: --</p>
+        <iframe id="map" title="Map of selected city" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        <p class="chart-note">The map shows the city area, not an exact monitoring station. Air-quality values are model estimates, not guaranteed local station measurements.</p>
+      </section>
+    </section>
+
+    <section class="page-section" id="history">
+      <div class="page-heading">
+        <div>
+          <h1>Search History</h1>
+          <p class="subtitle">Review the latest city searches saved in this browser on this device.</p>
+        </div>
+        <button class="secondary" id="clearHistoryBtn" type="button"><i class="fa-solid fa-trash"></i> Clear History</button>
+      </div>
+      <section class="panel">
+        <h2><i class="fa-solid fa-clock-rotate-left" style="color:var(--accent)"></i> Recent Search Records</h2>
+        <p class="subtitle">Up to 10 recent successful search attempts are stored in browser local storage.</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>City</th><th>US AQI</th><th>PM2.5</th><th>PM10</th><th>Reported</th></tr></thead>
+            <tbody id="historyBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+
+    <section class="page-section" id="reports">
+      <div class="page-heading">
+        <div>
+          <h1>Reports & Analytics</h1>
+          <p class="subtitle">A summary of readings saved by this browser during city searches.</p>
+        </div>
+        <button id="exportBtn" type="button"><i class="fa-solid fa-download"></i> Export CSV</button>
+      </div>
+      <section class="panel">
+        <h2><i class="fa-solid fa-chart-pie" style="color:var(--accent)"></i> Search Summary</h2>
+        <p class="subtitle">Statistics below use saved browser history, not a complete regional pollution database.</p>
+        <div class="report-grid">
+          <div class="report-stat"><span>Saved Records</span><strong id="reportCount">0</strong><small>Available in this browser</small></div>
+          <div class="report-stat"><span>Unique Cities</span><strong id="reportCities">0</strong><small>Based on saved searches</small></div>
+          <div class="report-stat"><span>Average Saved AQI</span><strong id="reportAverage">--</strong><small>Only records with numeric AQI</small></div>
+        </div>
+        <h2 style="margin-top:25px">Saved Reading Summary</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>City</th><th>AQI</th><th>PM2.5</th><th>PM10</th></tr></thead>
+            <tbody id="reportBody"></tbody>
+          </table>
+        </div>
+        <p class="chart-note" id="reportNote">Search for a city to build your summary.</p>
+      </section>
+    </section>
+
+  </main>
+  <footer class="footer">Pollution Tracker · Air quality and weather supplied by Open-Meteo · Model estimates</footer>
+</div>
+</div>
+
+<script>
+"use strict";
+
+const $ = id => document.getElementById(id);
+let airChart = null;
+let requestNumber = 0;
+let hourlyAirData = null;
+let chartMode = "aqi";
+let latestAqi = null;
+
+function numberOrNull(value) {
+  if (value === null || value === undefined || value === "") return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
+function show(value, suffix = "") {
+  return value === null ? "--" : `${value}${suffix}`;
+}
+
+function setStatus(message, isError = false) {
+  $("status").textContent = message;
+  $("status").style.color = isError ? "#fb7185" : "#94a3b8";
+}
+
+function aqiCategory(aqi) {
+  if (aqi === null) return ["Not available", "#94a3b8"];
+  if (aqi <= 50) return ["Good", "#22c55e"];
+  if (aqi <= 100) return ["Moderate", "#eab308"];
+  if (aqi <= 150) return ["Unhealthy for sensitive groups", "#fb923c"];
+  if (aqi <= 200) return ["Unhealthy", "#ef4444"];
+  if (aqi <= 300) return ["Very Unhealthy", "#a855f7"];
+  return ["Hazardous", "#be123c"];
+}
+
+function updateChart(aqi, pm25, pm10, hourly = hourlyAirData) {
+    if (aqi === null && pm25 === null && pm10 === null && !hourly) {
+    if (airChart) {
+      airChart.destroy();
+      airChart = null;
+    }
+
+    $("chartAqi").textContent = "--";
+    $("chartPm25").textContent = "--";
+    $("chartPm10").textContent = "--";
+    $("chartNote").textContent = "Search for a city to display the air-quality charts.";
+
+    if (window.Chart) {
+      airChart = new Chart($("airChart").getContext("2d"), {
+        type: "line",
+        data: {
+          labels: [],
+          datasets: []
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            title: {
+              display: true,
+              text: "Search for a city to view the trend",
+              color: "#94a3b8"
+            }
+          },
+          scales: {
+            x: { display: false },
+            y: { display: false }
+          }
+        }
+      });
+    }
+
+    return;
+  }
+  $("chartAqi").textContent = show(aqi);
+  $("chartPm25").textContent = pm25 === null ? "--" : `${pm25} µg/m³`;
+  $("chartPm10").textContent = pm10 === null ? "--" : `${pm10} µg/m³`;
+
+  if (!window.Chart) {
+    $("chartNote").textContent = "The chart library could not load. Check your internet connection.";
+    return;
+  }
+
+  if (airChart) airChart.destroy();
+
+  const allTimes = hourly && Array.isArray(hourly.time) ? hourly.time : [];
+  const labels = allTimes.slice(0, 24).map(t => {
+    const date = new Date(t);
+    return Number.isNaN(date.getTime()) ? t :
+      date.toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"});
+  });
+
+  const series = key =>
+    hourly && Array.isArray(hourly[key]) ?
+      hourly[key].slice(0, 24).map(numberOrNull) : [];
+
+  let datasets = [];
+  let title = "AQI";
+
+  if (chartMode === "aqi") {
+    title = "Air Quality Trend · hourly US AQI";
+    datasets = [{
+      label:"US AQI", data:series("us_aqi"),
+      borderColor:"#38d9b1", backgroundColor:"rgba(56,217,177,.15)",
+      fill:true, tension:.35, pointRadius:2, pointHoverRadius:6, spanGaps:true
+    }];
+  } else if (chartMode === "pm25") {
+    title = "PM2.5 Trend · µg/m³";
+    datasets = [{
+      label:"PM2.5 (µg/m³)", data:series("pm2_5"),
+      borderColor:"#60a5fa", backgroundColor:"rgba(96,165,250,.14)",
+      fill:true, tension:.35, pointRadius:2, pointHoverRadius:6, spanGaps:true
+    }];
+  } else if (chartMode === "pm10") {
+    title = "PM10 Trend · µg/m³";
+    datasets = [{
+      label:"PM10 (µg/m³)", data:series("pm10"),
+      borderColor:"#fbbf24", backgroundColor:"rgba(251,191,36,.12)",
+      fill:true, tension:.35, pointRadius:2, pointHoverRadius:6, spanGaps:true
+    }];
+  } else {
+    title = "Pollutant Comparison · µg/m³";
+    datasets = [
+      {label:"PM2.5 (µg/m³)",data:series("pm2_5"),borderColor:"#60a5fa",backgroundColor:"#60a5fa",tension:.3,pointRadius:1,spanGaps:true},
+      {label:"PM10 (µg/m³)",data:series("pm10"),borderColor:"#fbbf24",backgroundColor:"#fbbf24",tension:.3,pointRadius:1,spanGaps:true}
+    ];
+  }
+
+  const hasHourlyData = labels.length > 0 &&
+    datasets.some(ds => ds.data.length > 0 && ds.data.some(v => v !== null));
+
+  if (!hasHourlyData) {
+    labels.splice(0, labels.length, "Current");
+    datasets = [{
+      label:"Current available readings",
+      data:chartMode === "aqi" ? [aqi] :
+        chartMode === "pm25" ? [pm25] :
+        chartMode === "pm10" ? [pm10] : [pm25,pm10],
+      backgroundColor:chartMode === "aqi" ? ["#38d9b1"] :
+        chartMode === "pm25" ? ["#60a5fa"] :
+        chartMode === "pm10" ? ["#fbbf24"] : ["#60a5fa","#fbbf24"],
+      borderRadius:7
+    }];
+    if (chartMode === "compare") labels.splice(0, labels.length, "PM2.5", "PM10");
+    title = "Available Current Readings";
+  }
+
+  airChart = new Chart($("airChart").getContext("2d"), {
+    type: hasHourlyData ? "line" : "bar",
+    data:{labels,datasets},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      interaction:{mode:"index",intersect:false},
+      plugins:{
+        legend:{display:datasets.length>1,color:"#cbd5e1",labels:{color:"#cbd5e1",usePointStyle:true}},
+        title:{display:true,text:title,color:"#e2e8f0",font:{size:13,weight:"600"}},
+        tooltip:{backgroundColor:"#081323",borderColor:"#40516b",borderWidth:1,padding:12}
+      },
+      scales:{
+        x:{ticks:{color:"#94a3b8",maxTicksLimit:8,maxRotation:0},grid:{display:false}},
+        y:{beginAtZero:true,ticks:{color:"#94a3b8"},grid:{color:"rgba(148,163,184,.13)"}}
+      }
+    }
+  });
+
+  $("chartNote").textContent = hasHourlyData
+    ? "Showing hourly model estimates for the selected location. Hover over points for details. These are not guaranteed local station measurements."
+    : "Hourly data is unavailable for this response; showing the current available readings instead.";
+}
+
+function setMap(lat, lon) {
+  const delta = 0.055;
+  const bbox = [lon-delta,lat-delta,lon+delta,lat+delta].join(",");
+  $("map").src = "https://www.openstreetmap.org/export/embed.html?bbox=" +
+    encodeURIComponent(bbox) + "&layer=mapnik&marker=" +
+    encodeURIComponent(`${lat},${lon}`);
+}
+
+async function getJson(url) {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`Service returned HTTP ${response.status}`);
+  return response.json();
+}
+
+async function geocodeCity(city) {
+  const json = await getJson(
+    "https://geocoding-api.open-meteo.com/v1/search?name=" +
+    encodeURIComponent(city) + "&count=10&language=en&format=json"
+  );
+  const results = json.results || [];
+  if (!results.length) throw new Error("City not found. Check the spelling and try again.");
+  return results.find(place => place.country_code === "IN") || results[0];
+}
+
+function resetValues() {
+  ["aqi","pm25","pm10","temperature","humidity","wind"].forEach(id => $(id).textContent = "--");
+  $("aqiLabel").textContent = "Waiting for data";
+  $("aqiLabel").style.color = "#94a3b8";
+  $("stationName").textContent = "City location will appear here.";
+  $("reported").textContent = "Model timestamp: --";
+  $("weatherStatus").textContent = "Loading weather...";
+  hourlyAirData = null;
+  latestAqi = null;
+  renderAlerts(null, "");
+  updateChart(null,null,null,null);
+}
+
+function renderAlerts(aqi, city) {
+  const target = $("alertContent");
+  target.replaceChildren();
+
+  let heading, description, symbol, color;
+  if (aqi === null) {
+    heading = "Air-quality data unavailable";
+    description = "Search for a city to load the latest available AQI before checking its advisory.";
+    symbol = "fa-circle-info";
+    color = "#94a3b8";
+  } else if (aqi <= 50) {
+    heading = "Good air quality";
+    description = `${city}: the current modelled US AQI is ${aqi}. Air quality is in the Good category.`;
+    symbol = "fa-circle-check";
+    color = "#22c55e";
+  } else if (aqi <= 100) {
+    heading = "Moderate air quality";
+    description = `${city}: the current modelled US AQI is ${aqi}. Unusually sensitive people may wish to pay attention to symptoms.`;
+    symbol = "fa-circle-info";
+    color = "#eab308";
+  } else if (aqi <= 150) {
+    heading = "Unhealthy for sensitive groups";
+    description = `${city}: the current modelled US AQI is ${aqi}. Sensitive groups should consider reducing prolonged or heavy outdoor exertion.`;
+    symbol = "fa-triangle-exclamation";
+    color = "#fb923c";
+  } else if (aqi <= 200) {
+    heading = "Unhealthy air quality";
+    description = `${city}: the current modelled US AQI is ${aqi}. Consider reducing prolonged or heavy outdoor exertion and check official local guidance.`;
+    symbol = "fa-triangle-exclamation";
+    color = "#ef4444";
+  } else if (aqi <= 300) {
+    heading = "Very unhealthy air quality";
+    description = `${city}: the current modelled US AQI is ${aqi}. Reduce outdoor exertion and consult official local air-quality advisories.`;
+    symbol = "fa-circle-exclamation";
+    color = "#a855f7";
+  } else {
+    heading = "Hazardous air quality";
+    description = `${city}: the current modelled US AQI is ${aqi}. Avoid outdoor exertion and follow official local health guidance.`;
+    symbol = "fa-triangle-exclamation";
+    color = "#fb7185";
+  }
+
+  const card = document.createElement("div");
+  card.className = "alert-card";
+
+  const icon = document.createElement("div");
+  icon.className = "alert-icon";
+  icon.style.color = color;
+  const iconElement = document.createElement("i");
+  iconElement.className = "fa-solid " + symbol;
+  icon.appendChild(iconElement);
+
+  const textBox = document.createElement("div");
+  const title = document.createElement("strong");
+  title.textContent = heading;
+  const paragraph = document.createElement("p");
+  paragraph.textContent = description;
+
+  textBox.append(title, paragraph);
+  card.append(icon, textBox);
+  target.appendChild(card);
+
+  const note = document.createElement("p");
+  note.className = "chart-note";
+  note.textContent = "This advisory is based on modelled US AQI and is informational only. It is not a push notification, medical diagnosis, or official emergency alert.";
+  target.appendChild(note);
+}
+
+function readHistory() {
+  try {
+    const saved = JSON.parse(localStorage.getItem("pollutionHistory") || "[]");
+    return Array.isArray(saved) ? saved : [];
+  } catch (_) {
+    return [];
+  }
+}
+
+function saveHistory(item) {
+  try {
+    const history = readHistory();
+    history.unshift(item);
+    localStorage.setItem("pollutionHistory", JSON.stringify(history.slice(0,10)));
+  } catch (error) {
+    console.warn("Search history could not be saved:", error);
+  }
+  renderHistory();
+  renderReports();
+}
+
+function renderHistory() {
+  const history = readHistory();
+  const body = $("historyBody");
+  body.replaceChildren();
+
+  if (!history.length) {
+    const row = body.insertRow();
+    const cell = row.insertCell();
+    cell.colSpan = 5;
+    cell.className = "empty-cell";
+    cell.textContent = "No searches saved yet.";
+    return;
+  }
+
+  history.forEach(item => {
+    const row = body.insertRow();
+    [item.city,item.aqi,item.pm25,item.pm10,item.time].forEach(value => {
+      const cell = row.insertCell();
+      cell.textContent = value ?? "--";
+    });
+  });
+}
+
+function renderReports() {
+  const history = readHistory();
+  const cities = new Set(history.map(item => item.city).filter(Boolean));
+  const aqiValues = history.map(item => numberOrNull(item.aqi)).filter(value => value !== null);
+  const average = aqiValues.length
+    ? Math.round(aqiValues.reduce((sum,value) => sum + value,0) / aqiValues.length)
+    : null;
+
+  $("reportCount").textContent = history.length;
+  $("reportCities").textContent = cities.size;
+  $("reportAverage").textContent = average === null ? "--" : average;
+
+  const body = $("reportBody");
+  body.replaceChildren();
+
+  if (!history.length) {
+    const row = body.insertRow();
+    const cell = row.insertCell();
+    cell.colSpan = 4;
+    cell.className = "empty-cell";
+    cell.textContent = "No saved records available. Search for a city first.";
+    $("reportNote").textContent = "Reports will be populated using searches saved in this browser.";
+    return;
+  }
+
+  history.forEach(item => {
+    const row = body.insertRow();
+    [item.city,item.aqi,item.pm25,item.pm10].forEach(value => {
+      const cell = row.insertCell();
+      cell.textContent = value ?? "--";
+    });
+  });
+
+  $("reportNote").textContent =
+    `Summary of ${history.length} saved searches covering ${cities.size} unique ${cities.size === 1 ? "city" : "cities"}. Average AQI uses only records with numeric AQI values.`;
+}
+
+function clearHistory() {
+  try {
+    localStorage.removeItem("pollutionHistory");
+  } catch (_) {}
+  renderHistory();
+  renderReports();
+}
+
+function exportCSV() {
+  const history = readHistory();
+  if (!history.length) {
+    $("reportNote").textContent = "There are no saved records to export yet.";
+    return;
+  }
+
+  const headers = ["City","US AQI","PM2.5","PM10","Reported"];
+  const rows = history.map(item => [item.city,item.aqi,item.pm25,item.pm10,item.time]);
+  const escapeCSV = value => '"' + String(value ?? "").replace(/"/g,'""') + '"';
+  const csv = [headers,...rows].map(row => row.map(escapeCSV).join(",")).join("\r\n");
+  const blob = new Blob(["\uFEFF" + csv], {type:"text/csv;charset=utf-8;"});
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "pollution-tracker-report.csv";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+  $("reportNote").textContent = "CSV report export requested for the saved browser records.";
+}
+
+async function loadCity() {
+  const city = $("cityInput").value.trim();
+  if (!city) {
+    setStatus("Please enter a city name.", true);
+    return;
+  }
+
+  const thisRequest = ++requestNumber;
+  $("searchBtn").disabled = true;
+  $("refreshBtn").disabled = true;
+  resetValues();
+  setStatus(`Finding ${city} and loading API data...`);
+
+  try {
+    const place = await geocodeCity(city);
+    if (thisRequest !== requestNumber) return;
+
+    const lat = place.latitude;
+    const lon = place.longitude;
+    setMap(lat,lon);
+    $("stationName").textContent =
+      [place.name,place.admin1,place.country].filter(Boolean).join(", ");
+
+    const airUrl = "https://air-quality-api.open-meteo.com/v1/air-quality?latitude=" +
+      encodeURIComponent(lat) + "&longitude=" + encodeURIComponent(lon) +
+      "&current=us_aqi,pm2_5,pm10&hourly=us_aqi,pm2_5,pm10&forecast_days=1&timezone=auto";
+
+    const weatherUrl = "https://api.open-meteo.com/v1/forecast?latitude=" +
+      encodeURIComponent(lat) + "&longitude=" + encodeURIComponent(lon) +
+      "&current=temperature_2m,relative_humidity_2m,wind_speed_10m&wind_speed_unit=kmh&timezone=auto";
+
+    const results = await Promise.allSettled([getJson(airUrl),getJson(weatherUrl)]);
+    if (thisRequest !== requestNumber) return;
+
+    let aqi = null, pm25 = null, pm10 = null;
+    let airLoaded = false;
+
+    if (results[0].status === "fulfilled" && results[0].value.current) {
+      const current = results[0].value.current;
+      aqi = numberOrNull(current.us_aqi);
+      pm25 = numberOrNull(current.pm2_5);
+      pm10 = numberOrNull(current.pm10);
+
+      $("aqi").textContent = show(aqi);
+      $("pm25").textContent = show(pm25);
+      $("pm10").textContent = show(pm10);
+
+      const [category,color] = aqiCategory(aqi);
+      $("aqiLabel").textContent = category;
+      $("aqiLabel").style.color = color;
+      $("reported").textContent = "Model timestamp: " + (current.time || "not provided");
+      hourlyAirData = results[0].value.hourly || null;
+      latestAqi = aqi;
+      updateChart(aqi,pm25,pm10,hourlyAirData);
+      renderAlerts(aqi,place.name);
+      setStatus("Air-quality data loaded for " + place.name + ". Values are model estimates, not a local station report.");
+      airLoaded = true;
+    } else {
+      const reason = results[0].status === "rejected"
+        ? results[0].reason.message : "No current air-quality values returned.";
+      setStatus("Air-quality data could not be loaded: " + reason,true);
+      $("aqiLabel").textContent = "Data unavailable";
+      hourlyAirData = null;
+      latestAqi = null;
+      updateChart(null,null,null,null);
+      renderAlerts(null,place.name);
+    }
+
+    if (results[1].status === "fulfilled" && results[1].value.current) {
+      const current = results[1].value.current;
+      $("temperature").textContent = show(numberOrNull(current.temperature_2m),"°C");
+      $("humidity").textContent = show(numberOrNull(current.relative_humidity_2m),"%");
+      $("wind").textContent = show(numberOrNull(current.wind_speed_10m));
+      $("weatherStatus").textContent = "Current weather loaded from Open-Meteo.";
+    } else {
+      $("weatherStatus").textContent = "Weather could not be loaded. Check your internet connection and try Refresh.";
+    }
+
+    if (airLoaded) {
+      saveHistory({
+        city:place.name,
+        aqi:show(aqi),
+        pm25:show(pm25),
+        pm10:show(pm10),
+        time:new Date().toLocaleString()
+      });
+    }
+  } catch (error) {
+    if (thisRequest !== requestNumber) return;
+    setStatus(error.message || "Could not load data. Check your internet connection.",true);
+    $("weatherStatus").textContent = "Weather could not be loaded because the city lookup failed.";
+    renderAlerts(null,city);
+  } finally {
+    if (thisRequest === requestNumber) {
+      $("searchBtn").disabled = false;
+      $("refreshBtn").disabled = false;
+    }
+  }
+}
+
+$("searchBtn").addEventListener("click",loadCity);
+$("refreshBtn").addEventListener("click",loadCity);
+$("clearHistoryBtn").addEventListener("click",clearHistory);
+$("exportBtn").addEventListener("click",exportCSV);
+$("cityInput").addEventListener("keydown",event => {
+  if (event.key === "Enter") loadCity();
+});
+
+document.querySelectorAll("[data-chart-mode]").forEach(button => {
+  button.addEventListener("click",() => {
+    chartMode = button.dataset.chartMode;
+    document.querySelectorAll("[data-chart-mode]").forEach(item => {
+      item.classList.toggle("active",item === button);
+      item.classList.toggle("secondary",item !== button);
+    });
+    updateChart(
+      numberOrNull($("aqi").textContent),
+      numberOrNull($("pm25").textContent),
+      numberOrNull($("pm10").textContent),
+      hourlyAirData
+    );
+  });
+});
+
+const navLinks = document.querySelectorAll(".nav-link[href^='#']");
+const sections = document.querySelectorAll(".page-section");
+
+if ("IntersectionObserver" in window) {
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navLinks.forEach(link => {
+          link.classList.toggle("active",link.getAttribute("href") === "#" + entry.target.id);
+        });
+      }
+    });
+  },{rootMargin:"-20% 0px -65% 0px"});
+  sections.forEach(section => observer.observe(section));
+}
+
+renderHistory();
+renderReports();
+resetValues();
+
+$("weatherStatus").textContent = "Search for a city to load weather information.";
+$("stationName").textContent = "Search for a city to display its location.";
+$("reported").textContent = "Model timestamp: --";
+$("map").removeAttribute("src");
+setStatus("Enter a city name and click Search City to load data.");
+</script>
+</body>
+</html>
