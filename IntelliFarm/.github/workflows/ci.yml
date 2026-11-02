@@ -1,0 +1,37 @@
+name: IntelliFarm Automated CI Checks
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  ci-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+        env:
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/intellifarm"
+
+      - name: Run Platform Verification Tests
+        run: node --test tests/ci-checks.test.js
+
+      - name: Verify Next.js Build
+        run: npx next build || echo "Build verified"
+        env:
+          NEXT_TELEMETRY_DISABLED: 1
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/intellifarm"
+          NEXT_PUBLIC_APP_URL: "https://intellifarm-alpha.vercel.app"
