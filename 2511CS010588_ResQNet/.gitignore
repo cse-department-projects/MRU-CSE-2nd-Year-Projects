@@ -1,0 +1,31 @@
+﻿# Secrets and environment files
+**/.env
+**/.env.*
+!**/.env.example
+
+# Frontend dependencies and generated files
+**/node_modules/
+**/dist/
+**/dist-ssr/
+
+# Java / Maven
+**/target/
+*.class
+*.jar
+*.war
+
+# Logs
+*.log
+
+# IDE and operating system
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.bak
+
+# Local backend configuration containing credentials
+/backend/src/main/resources/application.properties
