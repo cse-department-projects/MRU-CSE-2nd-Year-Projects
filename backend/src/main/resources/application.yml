@@ -1,0 +1,27 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: smart-career-guidance-backend
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/smart_career_guidance_db
+      auto-index-creation: true
+
+app:
+  jwt:
+    # 256-bit base64 / HMAC-SHA-256 secret key for signing JWTs
+    secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+    expiration-ms: 86400000 # 24 hours
+  cors:
+    allowed-origins:
+      - "http://localhost:5173"
+      - "http://localhost:3000"
+      - "http://127.0.0.1:5173"
+      - "http://127.0.0.1:3000"
+
+logging:
+  level:
+    com.careerguidance: DEBUG
+    org.springframework.security: INFO
