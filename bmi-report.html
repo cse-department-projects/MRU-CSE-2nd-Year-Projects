@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>FitSphere - BMI Report</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="app-page">
+
+    <nav class="navbar">
+
+        <div class="logo">FitSphere</div>
+
+        <div class="nav-links">
+            <a href="progress.html">Progress</a>
+            <a href="workouts.html">Workouts</a>
+            <a href="profile.html">Profile</a>
+        </div>
+
+    </nav>
+
+    <main class="bmi-container">
+
+        <div class="page-title">
+            <h1>BMI Report</h1>
+            <p>Understand your current body mass index.</p>
+        </div>
+
+        <div class="bmi-card">
+
+            <div class="bmi-result">
+
+                <span>Your BMI</span>
+
+                <h1 id="bmiValue">--</h1>
+
+                <h2 id="bmiStatus">Enter your details</h2>
+
+            </div>
+
+            <div class="bmi-details">
+
+                <div>
+                    <span>Height</span>
+                    <strong id="bmiHeight">--</strong>
+                </div>
+
+                <div>
+                    <span>Weight</span>
+                    <strong id="bmiWeight">--</strong>
+                </div>
+
+            </div>
+
+            <div class="bmi-scale">
+
+                <h2>BMI Categories</h2>
+
+                <div class="bmi-category">
+                    <span>Below 18.5</span>
+                    <strong>Underweight</strong>
+                </div>
+
+                <div class="bmi-category">
+                    <span>18.5 – 24.9</span>
+                    <strong>Normal</strong>
+                </div>
+
+                <div class="bmi-category">
+                    <span>25 – 29.9</span>
+                    <strong>Overweight</strong>
+                </div>
+
+                <div class="bmi-category">
+                    <span>30+</span>
+                    <strong>Obesity</strong>
+                </div>
+
+            </div>
+
+        </div>
+
+        <button
+            class="main-button"
+            onclick="window.location.href='progress.html'">
+            ← Back to Progress
+        </button>
+
+    </main>
+
+    <script src="script.js"></script>
+
+</body>
+</html>

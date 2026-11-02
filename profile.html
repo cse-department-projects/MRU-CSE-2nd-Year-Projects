@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FitSphere - Profile</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="app-page">
+
+   <nav class="navbar">
+    <div class="logo">FitSphere</div>
+
+```
+<div class="nav-links">
+    <a href="home.html">Home</a>
+    <a href="progress.html">Progress</a>
+    <a href="workouts.html" class="active">Workouts</a>
+    <a href="profile.html">Profile</a>
+</div>
+```
+
+</nav>
+
+
+    <main class="profile-container">
+
+        <div class="profile-header">
+
+            <div class="profile-avatar">
+                👤
+            </div>
+
+            <div>
+                <h1 id="profileName">Your Profile</h1>
+                <p>Manage your fitness information</p>
+            </div>
+
+        </div>
+
+        <div class="profile-grid">
+
+            <div class="profile-card">
+
+                <h2>Personal Information</h2>
+
+                <div class="profile-item">
+                    <span>Name</span>
+                    <strong id="displayName">-</strong>
+                </div>
+
+                <div class="profile-item">
+                    <span>Age</span>
+                    <strong id="displayAge">-</strong>
+                </div>
+
+                <div class="profile-item">
+                    <span>Gender</span>
+                    <strong id="displayGender">-</strong>
+                </div>
+
+            </div>
+
+            <div class="profile-card">
+
+                <h2>Fitness Information</h2>
+
+                <div class="profile-item">
+                    <span>Height</span>
+                    <strong id="displayHeight">-</strong>
+                </div>
+
+                <div class="profile-item">
+                    <span>Weight</span>
+                    <strong id="displayWeight">-</strong>
+                </div>
+
+                <div class="profile-item">
+                    <span>Fitness Goal</span>
+                    <strong id="displayGoal">-</strong>
+                </div>
+
+                <div class="profile-item">
+                    <span>Activity Level</span>
+                    <strong id="displayActivity">-</strong>
+                </div>
+
+            </div>
+
+        </div>
+
+        <button
+            class="main-button"
+            onclick="window.location.href='bmi-report.html'">
+            View My BMI Report →
+        </button>
+
+        <button
+            class="logout-button"
+            onclick="logoutUser()">
+            Logout
+        </button>
+
+    </main>
+
+    <script src="script.js"></script>
+
+</body>
+</html>

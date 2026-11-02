@@ -1,0 +1,268 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FitSphere - Details</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<header class="navbar">
+    <h2>FitSphere</h2>
+    <nav class="nav-links">
+        <a href="home.html">Home</a>
+        <a href="progress.html">Progress</a>
+        <a href="workouts.html">Workouts</a>
+        <a href="profile.html">Profile</a>
+    </nav>
+</header>
+
+<main class="new-page">
+
+    <section class="page-heading">
+        <h1>Your Fitness Details</h1>
+        <p>Enter your details to personalize your fitness journey.</p>
+    </section>
+
+    <section class="tracker-card">
+
+        <form id="detailsForm">
+
+            <label class="page-label" for="fullName">Full Name</label>
+            <input
+                class="page-input"
+                type="text"
+                id="fullName"
+                placeholder="Enter your name"
+                required
+            >
+
+            <label class="page-label" for="age">Age</label>
+            <input
+                class="page-input"
+                type="number"
+                id="age"
+                placeholder="Enter your age"
+                min="1"
+                max="120"
+                required
+            >
+
+            <label class="page-label" for="gender">Gender</label>
+            <select class="page-select" id="gender" required>
+                <option value="">Select gender</option>
+                <option value="Female">Female</option>
+                <option value="Male">Male</option>
+                <option value="Other">Other</option>
+                <option value="Prefer not to say">Prefer not to say</option>
+            </select>
+
+            <label class="page-label" for="height">Height (cm)</label>
+            <input
+                class="page-input"
+                type="number"
+                id="height"
+                placeholder="Enter height in cm"
+                min="1"
+                required
+            >
+
+            <label class="page-label" for="weight">Weight (kg)</label>
+            <input
+                class="page-input"
+                type="number"
+                id="weight"
+                placeholder="Enter weight in kg"
+                min="1"
+                step="0.1"
+                required
+            >
+
+            <label class="page-label" for="goal">Fitness Goal</label>
+            <select class="page-select" id="goal" required>
+                <option value="">Choose your goal</option>
+                <option value="Weight Loss">Weight Loss</option>
+                <option value="Muscle Gain">Muscle Gain</option>
+                <option value="Stay Fit">Stay Fit</option>
+                <option value="Improve Stamina">Improve Stamina</option>
+            </select>
+
+            <button type="submit" class="page-btn" id="saveButton">
+                Save Details
+            </button>
+
+            <p id="detailsMessage" class="page-message" role="status"></p>
+
+        </form>
+    </section>
+
+    <section class="result-card" id="savedDetails" hidden>
+        <h2>Your Saved Details</h2>
+        <p id="detailsSummary"></p>
+
+        <button
+            type="button"
+            class="page-btn secondary"
+            id="editDetails"
+        >
+            Edit Details
+        </button>
+    </section>
+
+</main>
+
+<script>
+const detailsForm = document.getElementById("detailsForm");
+const detailsMessage = document.getElementById("detailsMessage");
+const savedDetails = document.getElementById("savedDetails");
+const detailsSummary = document.getElementById("detailsSummary");
+const saveButton = document.getElementById("saveButton");
+
+// Display saved details.
+function displayDetails(data) {
+    detailsSummary.textContent =
+        "Name: " + data.name +
+        " | Age: " + data.age +
+        " | Gender: " + data.gender +
+        " | Height: " + data.height + " cm" +
+        " | Weight: " + data.weight + " kg" +
+        " | Goal: " + data.goal;
+
+    savedDetails.hidden = false;
+}
+
+// Load previously saved details into the form.
+try {
+    const previous = JSON.parse(
+        localStorage.getItem("fitsphereDetails") || "null"
+    );
+
+    if (previous) {
+        document.getElementById("fullName").value =
+            previous.name || "";
+
+        document.getElementById("age").value =
+            previous.age || "";
+
+        document.getElementById("gender").value =
+            previous.gender || "";
+
+        document.getElementById("height").value =
+            previous.height || "";
+
+        document.getElementById("weight").value =
+            previous.weight || "";
+
+        document.getElementById("goal").value =
+            previous.goal || "";
+
+        displayDetails(previous);
+    }
+} catch (error) {
+    console.error("Could not load saved details:", error);
+}
+
+// Save details and navigate to Home only after success.
+detailsForm.addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    if (!detailsForm.checkValidity()) {
+        detailsForm.reportValidity();
+        return;
+    }
+
+    const data = {
+        name: document.getElementById("fullName").value.trim(),
+        age: Number(document.getElementById("age").value),
+        gender: document.getElementById("gender").value,
+        height: Number(document.getElementById("height").value),
+        weight: Number(document.getElementById("weight").value),
+        goal: document.getElementById("goal").value
+    };
+
+    saveButton.disabled = true;
+    saveButton.textContent = "Saving...";
+    detailsMessage.style.color = "";
+    detailsMessage.textContent = "Saving your details...";
+
+    try {
+        const response = await fetch(
+            "http://localhost:3000/api/users",
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(data)
+            }
+        );
+
+        let result;
+
+        try {
+            result = await response.json();
+        } catch {
+            result = {};
+        }
+
+        if (!response.ok) {
+            throw new Error(
+                result.message || "Could not save your details."
+            );
+        }
+
+        // Save locally only after the backend confirms success.
+        localStorage.setItem(
+            "fitsphereDetails",
+            JSON.stringify(data)
+        );
+
+        // Keep older profile code compatible.
+        localStorage.setItem("name", data.name);
+        localStorage.setItem("age", String(data.age));
+        localStorage.setItem("gender", data.gender);
+        localStorage.setItem("height", String(data.height));
+        localStorage.setItem("weight", String(data.weight));
+        localStorage.setItem("goal", data.goal);
+
+        displayDetails(data);
+
+        detailsMessage.style.color = "green";
+        detailsMessage.textContent =
+            "Details saved successfully! Opening Home...";
+
+        window.location.assign("./home.html");
+
+    } catch (error) {
+        console.error("Save details error:", error);
+
+        detailsMessage.style.color = "red";
+        detailsMessage.textContent =
+            "Could not save details. Please check that the backend is running and try again.";
+
+    } finally {
+        saveButton.disabled = false;
+        saveButton.textContent = "Save Details";
+    }
+});
+
+// Edit saved details.
+document.getElementById("editDetails").addEventListener(
+    "click",
+    function() {
+        savedDetails.hidden = true;
+        detailsMessage.textContent =
+            "Update your details and save again.";
+
+        detailsForm.scrollIntoView({
+            behavior: "smooth"
+        });
+    }
+);
+</script>
+
+</body>
+</html>

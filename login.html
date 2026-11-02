@@ -1,0 +1,157 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FitSphere - Login</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="login-page">
+
+    <div class="login-wrapper">
+
+        <div class="login-brand">
+            <div class="brand-circle">🏋️</div>
+            <h1>FitSphere</h1>
+            <h2>Your Fitness. Your Journey.</h2>
+            <p>
+                Track your workouts, monitor your progress,
+                calculate your BMI and achieve your fitness goals.
+            </p>
+        </div>
+
+        <div class="login-box">
+            <h2>Welcome Back!</h2>
+            <p class="login-subtitle">
+                Login to continue to FitSphere
+            </p>
+
+            <form id="loginForm">
+
+                <label for="username">Username</label>
+                <input
+                    type="text"
+                    id="username"
+                    name="username"
+                    placeholder="Enter your username"
+                    autocomplete="username"
+                    required
+                >
+
+                <label for="password">Password</label>
+                <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    placeholder="Enter your password"
+                    autocomplete="current-password"
+                    required
+                >
+
+                <button type="submit" id="loginButton">
+                    Login
+                </button>
+
+                <p id="loginMessage" role="status"></p>
+
+                <p class="login-subtitle">
+                    Don't have an account?
+                    <a href="register.html">Register here</a>
+                </p>
+
+            </form>
+        </div>
+
+    </div>
+
+    <script>
+        const loginForm = document.getElementById("loginForm");
+        const loginMessage = document.getElementById("loginMessage");
+        const loginButton = document.getElementById("loginButton");
+
+        loginForm.addEventListener("submit", async function(event) {
+            event.preventDefault();
+
+            const username = document
+                .getElementById("username")
+                .value.trim();
+
+            const password = document
+                .getElementById("password")
+                .value;
+
+            loginButton.disabled = true;
+            loginButton.textContent = "Logging in...";
+            loginMessage.style.color = "red";
+            loginMessage.textContent = "";
+
+            try {
+                const response = await fetch(
+                    "http://localhost:3000/api/login",
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            username: username,
+                            password: password
+                        })
+                    }
+                );
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(
+                        result.message || "Invalid username or password."
+                    );
+                }
+
+                // Save the logged-in user's information.
+                if (result.user) {
+                    localStorage.setItem(
+                        "fitsphereUser",
+                        JSON.stringify(result.user)
+                    );
+
+                    if (result.user.username) {
+                        localStorage.setItem(
+                            "username",
+                            result.user.username
+                        );
+                    }
+                }
+
+                loginMessage.style.color = "green";
+                loginMessage.textContent =
+                    "Login successful! Opening details page...";
+
+                // Open the details page after successful login.
+                window.setTimeout(function() {
+                    window.location.href = "details.html";
+                }, 700);
+
+            } catch (error) {
+                console.error("Login error:", error);
+
+                loginMessage.style.color = "red";
+
+                if (error.message === "Failed to fetch") {
+                    loginMessage.textContent =
+                        "Cannot connect to the backend. Please start the server.";
+                } else {
+                    loginMessage.textContent = error.message;
+                }
+
+            } finally {
+                loginButton.disabled = false;
+                loginButton.textContent = "Login";
+            }
+        });
+    </script>
+
+</body>
+</html>

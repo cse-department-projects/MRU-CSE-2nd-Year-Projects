@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FitSphere - Workouts</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="app-page">
+
+   <nav class="navbar">
+
+```
+<div class="logo">FitSphere</div>
+
+<div class="nav-links">
+    <a href="home.html">Home</a>
+    <a href="progress.html">Progress</a>
+    <a href="workouts.html" class="active">Workouts</a>
+    <a href="profile.html">Profile</a>
+</div>
+```
+
+</nav>
+
+
+    <main class="app-container">
+
+        <div class="page-title">
+            <h1>Workout Plans</h1>
+            <p>Choose a workout and start building a stronger you.</p>
+        </div>
+
+        <div class="workout-grid">
+
+            <div class="workout-card">
+                <div class="workout-icon">🔥</div>
+                <h2>Full Body Workout</h2>
+                <p>Complete body workout for beginners.</p>
+
+                <div class="workout-info">
+                    <span>⏱ 30 min</span>
+                    <span>⭐ Beginner</span>
+                </div>
+
+                <button onclick="startWorkout('Full Body Workout')">
+                    Start Workout
+                </button>
+            </div>
+
+            <div class="workout-card">
+                <div class="workout-icon">💪</div>
+                <h2>Strength Training</h2>
+                <p>Build strength and improve muscle fitness.</p>
+
+                <div class="workout-info">
+                    <span>⏱ 40 min</span>
+                    <span>⭐ Intermediate</span>
+                </div>
+
+                <button onclick="startWorkout('Strength Training')">
+                    Start Workout
+                </button>
+            </div>
+
+            <div class="workout-card">
+                <div class="workout-icon">🏃</div>
+                <h2>Cardio Workout</h2>
+                <p>Improve stamina and burn calories.</p>
+
+                <div class="workout-info">
+                    <span>⏱ 25 min</span>
+                    <span>⭐ Beginner</span>
+                </div>
+
+                <button onclick="startWorkout('Cardio Workout')">
+                    Start Workout
+                </button>
+            </div>
+
+            <div class="workout-card">
+                <div class="workout-icon">🧘</div>
+                <h2>Yoga & Flexibility</h2>
+                <p>Improve flexibility, balance and relaxation.</p>
+
+                <div class="workout-info">
+                    <span>⏱ 30 min</span>
+                    <span>⭐ Beginner</span>
+                </div>
+
+                <button onclick="startWorkout('Yoga & Flexibility')">
+                    Start Workout
+                </button>
+            </div>
+
+        </div>
+
+    </main>
+
+    <script src="script.js"></script>
+
+</body>
+</html>

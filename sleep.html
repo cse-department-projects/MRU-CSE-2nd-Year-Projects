@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FitSphere - Sleep Tracker</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="app-page">
+<nav class="navbar">
+    <div class="logo">FitSphere</div>
+    <div class="nav-links">
+        <a href="home.html">Home</a><a href="progress.html">Progress</a>
+        <a href="workouts.html">Workouts</a>
+        <a href="profile.html">Profile</a>
+    </div>
+</nav>
+
+<main class="new-page">
+    <header class="page-heading">
+        <h1>🌙 Sleep Tracker</h1>
+        <p>Record your sleep and build a consistent routine.</p>
+    </header>
+
+    <section class="tracker-card">
+        <h2>Add Sleep Record</h2>
+        <form id="sleepForm">
+            <label class="page-label" for="sleepDate">Date</label>
+            <input class="page-input" id="sleepDate" type="date" required>
+
+            <label class="page-label" for="sleepHours">Hours slept</label>
+            <input class="page-input" id="sleepHours" type="number" min="0" max="24" step="0.25" placeholder="Example: 7.5" required>
+
+            <button class="page-btn" type="submit">Save Sleep Record</button>
+        </form>
+        <p class="page-message" id="sleepMessage" aria-live="polite"></p>
+    </section>
+
+    <section class="tracker-card" style="margin-top:20px">
+        <h2>Recent Sleep Records</h2>
+        <div id="sleepHistory">
+            <p>Your saved records will appear here.</p>
+        </div>
+    </section>
+
+    <p>Most adults generally need 7–9 hours of sleep, although individual needs can vary.</p>
+</main>
+
+<footer><p>© 2026 FitSphere | Rest and Recover</p></footer>
+<script src="script.js"></script>
+</body>
+</html>

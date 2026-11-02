@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FitSphere - Water Tracker</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="app-page">
+<nav class="navbar">
+    <div class="logo">FitSphere</div>
+    <div class="nav-links">
+        <a href="home.html">Home</a>
+        <a href="progress.html">Progress</a>
+        <a href="workouts.html">Workouts</a>
+        <a href="profile.html">Profile</a>
+    </div>
+</nav>
+
+<main class="new-page">
+    <header class="page-heading">
+        <h1>💧 Water Tracker</h1>
+        <p>Track your water intake for today.</p>
+    </header>
+
+    <section class="tracker-card">
+        <div class="feature-icon">🥤</div>
+        <h2><span id="waterCount">0</span> glasses</h2>
+        <p>Daily goal progress</p>
+
+        <div class="progress-track">
+            <div class="progress-fill" id="waterFill"></div>
+        </div>
+
+        <label class="page-label" for="waterGoal">Daily goal (glasses)</label>
+        <input class="page-input" id="waterGoal" type="number" min="1" max="30" value="8">
+
+        <button class="page-btn" id="addWater" type="button">+ Add a glass</button>
+        <button class="page-btn secondary" id="removeWater" type="button">− Remove a glass</button>
+
+        <p class="page-message" id="waterMessage" aria-live="polite"></p>
+    </section>
+
+    <p>Water needs vary with weather, activity and health. This tracker is a reminder, not a medical hydration target. Your count resets each day.</p>
+</main>
+
+<footer><p>© 2026 FitSphere | Stay Hydrated</p></footer>
+<script src="script.js"></script>
+</body>
+</html>
