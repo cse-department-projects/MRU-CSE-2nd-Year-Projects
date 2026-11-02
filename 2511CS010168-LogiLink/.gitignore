@@ -1,0 +1,29 @@
+# Node
+node_modules/
+frontend/node_modules/
+
+# React build
+dist/
+frontend/dist/
+
+# Java build
+backend/target/
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+scratch/

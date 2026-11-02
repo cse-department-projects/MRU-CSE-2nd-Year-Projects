@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="LogiLink transportation and logistics management frontend" />
+    <title>LogiLink Operations</title>
+    <script>
+      (function() {
+        try {
+          localStorage.setItem('logilink_theme', 'Light');
+          var d = localStorage.getItem('logilink_density') || 'Default';
+          document.documentElement.setAttribute('data-theme', 'light');
+          document.documentElement.setAttribute('data-density', d.toLowerCase());
+        } catch(e) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
