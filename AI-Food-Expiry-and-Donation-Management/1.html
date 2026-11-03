@@ -1,0 +1,2611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FoodGuard AI — Expiry & Donation Management</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.1"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<style>
+:root {
+  --bg: #070d0a;
+  --bg2: #0c1510;
+  --card: #111e17;
+  --card2: #162a1f;
+  --border: #1e3a2a;
+  --border2: #2a5040;
+  --fg: #e4f0e8;
+  --fg2: #c0d4c8;
+  --muted: #6b8f7a;
+  --accent: #34d399;
+  --accent2: #10b981;
+  --amber: #f59e0b;
+  --amber2: #d97706;
+  --danger: #ef4444;
+  --info: #3b82f6;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  overflow: hidden;
+  height: 100vh;
+}
+h1,h2,h3,h4,h5,h6 { font-family: 'Space Grotesk', sans-serif; }
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg2); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+.sidebar {
+  width: 260px; min-width: 260px;
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  height: 100vh; overflow-y: auto;
+  transition: transform 0.3s ease;
+  display: flex; flex-direction: column;
+}
+.sidebar .nav-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 20px; margin: 2px 8px;
+  border-radius: 8px; cursor: pointer;
+  color: var(--muted); font-size: 14px;
+  transition: all 0.2s ease;
+}
+.sidebar .nav-item:hover { background: var(--card); color: var(--fg2); }
+.sidebar .nav-item.active { background: var(--card2); color: var(--accent); border: 1px solid var(--border2); }
+.sidebar .nav-item i { width: 20px; text-align: center; font-size: 15px; }
+.sidebar .nav-section { padding: 16px 20px 6px; font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--border2); font-weight: 600; }
+
+.main-content {
+  flex: 1; overflow-y: auto; height: 100vh;
+  background: var(--bg);
+  position: relative;
+}
+.main-content::before {
+  content: ''; position: fixed; top: -200px; right: -200px;
+  width: 600px; height: 600px;
+  background: radial-gradient(circle, rgba(52,211,153,0.06) 0%, transparent 70%);
+  pointer-events: none; z-index: 0;
+}
+.main-content::after {
+  content: ''; position: fixed; bottom: -300px; left: 200px;
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(245,158,11,0.04) 0%, transparent 70%);
+  pointer-events: none; z-index: 0;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  position: relative; z-index: 1;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+.card:hover { border-color: var(--border2); }
+.card-glow:hover { box-shadow: 0 0 30px rgba(52,211,153,0.06); transform: translateY(-1px); }
+
+.btn {
+  padding: 8px 18px; border-radius: 8px; font-size: 14px; font-weight: 500;
+  cursor: pointer; border: none; transition: all 0.2s ease;
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: 'DM Sans', sans-serif;
+}
+.btn-primary { background: var(--accent); color: #070d0a; }
+.btn-primary:hover { background: var(--accent2); transform: translateY(-1px); box-shadow: 0 4px 15px rgba(52,211,153,0.3); }
+.btn-secondary { background: var(--card2); color: var(--fg2); border: 1px solid var(--border); }
+.btn-secondary:hover { border-color: var(--border2); background: var(--border); }
+.btn-danger { background: rgba(239,68,68,0.15); color: var(--danger); border: 1px solid rgba(239,68,68,0.3); }
+.btn-danger:hover { background: rgba(239,68,68,0.25); }
+.btn-amber { background: rgba(245,158,11,0.15); color: var(--amber); border: 1px solid rgba(245,158,11,0.3); }
+.btn-amber:hover { background: rgba(245,158,11,0.25); }
+.btn-sm { padding: 5px 12px; font-size: 12px; }
+
+.input-field {
+  width: 100%; padding: 10px 14px;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 8px; color: var(--fg); font-size: 14px;
+  font-family: 'DM Sans', sans-serif;
+  transition: border-color 0.2s ease;
+  outline: none;
+}
+.input-field:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(52,211,153,0.1); }
+.input-field::placeholder { color: var(--muted); }
+select.input-field { cursor: pointer; }
+select.input-field option { background: var(--card); color: var(--fg); }
+textarea.input-field { resize: vertical; min-height: 80px; }
+label { display: block; font-size: 13px; color: var(--fg2); margin-bottom: 6px; font-weight: 500; }
+
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
+}
+.badge-fresh { background: rgba(52,211,153,0.15); color: var(--accent); }
+.badge-expiring { background: rgba(245,158,11,0.15); color: var(--amber); }
+.badge-expired { background: rgba(239,68,68,0.15); color: var(--danger); }
+.badge-posted { background: rgba(59,130,246,0.15); color: var(--info); }
+.badge-accepted { background: rgba(245,158,11,0.15); color: var(--amber); }
+.badge-pickup { background: rgba(168,85,247,0.15); color: #a855f7; }
+.badge-delivered { background: rgba(52,211,153,0.15); color: var(--accent); }
+.badge-completed { background: rgba(16,185,129,0.2); color: #10b981; }
+.badge-pending { background: rgba(245,158,11,0.15); color: var(--amber); }
+.badge-verified { background: rgba(52,211,153,0.15); color: var(--accent); }
+.badge-unverified { background: rgba(239,68,68,0.15); color: var(--danger); }
+
+.stat-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 20px; position: relative; z-index: 1;
+  overflow: hidden;
+}
+.stat-card::after {
+  content: ''; position: absolute; top: 0; right: 0;
+  width: 80px; height: 80px;
+  border-radius: 0 12px 0 60px;
+  opacity: 0.08;
+}
+.stat-card.green::after { background: var(--accent); }
+.stat-card.amber::after { background: var(--amber); }
+.stat-card.red::after { background: var(--danger); }
+.stat-card.blue::after { background: var(--info); }
+
+.progress-bar {
+  height: 6px; background: var(--bg); border-radius: 3px; overflow: hidden;
+}
+.progress-fill {
+  height: 100%; border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+.toast-container {
+  position: fixed; top: 20px; right: 20px; z-index: 9999;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.toast {
+  padding: 12px 20px; border-radius: 10px;
+  font-size: 14px; min-width: 280px;
+  animation: slideIn 0.3s ease, fadeOut 0.3s ease 2.7s forwards;
+  display: flex; align-items: center; gap: 10px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+}
+.toast-success { background: #0d2818; border: 1px solid rgba(52,211,153,0.3); color: var(--accent); }
+.toast-error { background: #2a0f0f; border: 1px solid rgba(239,68,68,0.3); color: var(--danger); }
+.toast-info { background: #0f1a2a; border: 1px solid rgba(59,130,246,0.3); color: var(--info); }
+.toast-warning { background: #2a1f0f; border: 1px solid rgba(245,158,11,0.3); color: var(--amber); }
+
+@keyframes slideIn { from { transform: translateX(100px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes fadeOut { to { transform: translateX(100px); opacity: 0; } }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+@keyframes scanLine {
+  0% { top: 0; } 100% { top: 100%; }
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.animate-pulse-slow { animation: pulse 2s ease-in-out infinite; }
+.scanning .scan-line {
+  position: absolute; left: 0; width: 100%; height: 3px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  animation: scanLine 1.5s ease-in-out infinite;
+  box-shadow: 0 0 15px var(--accent);
+}
+
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(4px); z-index: 1000;
+  display: flex; align-items: center; justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+.modal-box {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 16px; padding: 28px; max-width: 560px; width: 90%;
+  max-height: 85vh; overflow-y: auto;
+  animation: scaleIn 0.2s ease;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes scaleIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+.table-wrap { overflow-x: auto; }
+.table-wrap table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.table-wrap th {
+  text-align: left; padding: 10px 14px;
+  background: var(--bg2); color: var(--muted);
+  font-weight: 600; font-size: 11px;
+  text-transform: uppercase; letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border);
+}
+.table-wrap td {
+  padding: 10px 14px; border-bottom: 1px solid var(--border);
+  color: var(--fg2); vertical-align: middle;
+}
+.table-wrap tr:hover td { background: rgba(52,211,153,0.03); }
+
+.tab-btn {
+  padding: 8px 16px; border-radius: 8px; font-size: 13px;
+  cursor: pointer; border: 1px solid transparent;
+  background: transparent; color: var(--muted);
+  font-family: 'DM Sans', sans-serif; font-weight: 500;
+  transition: all 0.2s ease;
+}
+.tab-btn.active { background: var(--card2); color: var(--accent); border-color: var(--border2); }
+.tab-btn:hover:not(.active) { color: var(--fg2); }
+
+.notification-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--danger); display: inline-block;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.auth-bg {
+  min-height: 100vh;
+  background: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+  position: relative; overflow: hidden;
+}
+.auth-bg::before {
+  content: ''; position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 800px; height: 800px;
+  background: radial-gradient(circle, rgba(52,211,153,0.08) 0%, transparent 60%);
+  pointer-events: none;
+}
+.auth-bg::after {
+  content: ''; position: absolute; bottom: -100px; right: -100px;
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(245,158,11,0.06) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.confidence-bar {
+  height: 8px; background: var(--bg); border-radius: 4px; overflow: hidden; flex: 1;
+}
+.confidence-fill {
+  height: 100%; border-radius: 4px;
+  transition: width 0.8s ease;
+}
+
+.expiry-indicator {
+  display: flex; align-items: center; gap: 8px; font-size: 12px;
+}
+.expiry-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+}
+
+.mobile-toggle {
+  position: fixed; top: 12px; left: 12px; z-index: 101;
+  width: 40px; height: 40px; background: var(--card);
+  border: 1px solid var(--border); border-radius: 10px;
+  display: none; align-items: center; justify-content: center;
+  cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  .sidebar { position: fixed; z-index: 100; transform: translateX(-100%); }
+  .sidebar.open { transform: translateX(0); }
+  .mobile-toggle { display: flex !important; }
+}
+</style>
+</head>
+<body>
+
+<div id="toast-container" class="toast-container"></div>
+<div id="modal-container"></div>
+<div id="app"></div>
+
+<script>
+
+// ============================================================
+// DATA LAYER — localStorage persistence
+// ============================================================
+const DB = {
+  get(key) { try { return JSON.parse(localStorage.getItem('fg_' + key)) || []; } catch { return []; } },
+  set(key, data) { localStorage.setItem('fg_' + key, JSON.stringify(data)); },
+  getOne(key) { try { return JSON.parse(localStorage.getItem('fg_' + key)); } catch { return null; } },
+  setOne(key, data) { localStorage.setItem('fg_' + key, JSON.stringify(data)); },
+  remove(key) { localStorage.removeItem('fg_' + key); },
+  genId() { return Date.now().toString(36) + Math.random().toString(36).substr(2, 5); }
+};
+
+// ============================================================
+// STATE
+// ============================================================
+let state = {
+  currentUser: DB.getOne('currentUser'),
+  currentPage: 'dashboard',
+  charts: {}
+};
+
+// ============================================================
+// SEED DATA
+// ============================================================
+function seedData() {
+  if (DB.getOne('seeded')) return;
+
+  const users = [
+    { id: 'admin1', name: 'Admin User', email: 'admin@test.com', password: 'admin123', role: 'admin', phone: '555-0100', address: 'City Hall, Main St', verified: true, createdAt: '2024-01-01T00:00:00' },
+    { id: 'user1', name: 'Sarah Johnson', email: 'user@test.com', password: 'user123', role: 'user', phone: '555-0101', address: '123 Oak Avenue, Springfield', verified: true, createdAt: '2024-02-15T10:30:00' },
+    { id: 'user2', name: 'Mike Chen', email: 'mike@test.com', password: 'user123', role: 'user', phone: '555-0102', address: '456 Pine Road, Shelbyville', verified: true, createdAt: '2024-03-01T14:20:00' },
+    { id: 'user3', name: 'Emily Davis', email: 'emily@test.com', password: 'user123', role: 'user', phone: '555-0103', address: '789 Elm Street, Capital City', verified: true, createdAt: '2024-03-10T09:15:00' },
+    { id: 'ngo1', name: 'Hope Food Bank', email: 'ngo@test.com', password: 'ngo123', role: 'ngo', phone: '555-0201', address: '100 Charity Lane', orgName: 'Hope Food Bank', orgType: 'Food Bank', verified: true, createdAt: '2024-01-15T08:00:00' },
+    { id: 'ngo2', name: 'Community Kitchen', email: 'kitchen@test.com', password: 'ngo123', role: 'ngo', phone: '555-0202', address: '200 Help Street', orgName: 'Community Kitchen', orgType: 'Community Kitchen', verified: false, createdAt: '2024-04-01T11:00:00' },
+    { id: 'ngo3', name: 'Meals for All', email: 'meals@test.com', password: 'ngo123', role: 'ngo', phone: '555-0203', address: '300 Share Blvd', orgName: 'Meals for All', orgType: 'Meal Program', verified: true, createdAt: '2024-02-20T13:30:00' },
+  ];
+  DB.set('users', users);
+
+  const now = new Date();
+  const d = (days) => { const dt = new Date(now); dt.setDate(dt.getDate() + days); return dt.toISOString().split('T')[0]; };
+
+  const foods = [
+    { id: 'f1', userId: 'user1', name: 'Organic Milk', category: 'Dairy & Eggs', quantity: 2, unit: 'liters', expiryDate: d(2), addedDate: d(-5), storageCondition: 'Refrigerated', status: 'fresh', image: '' },
+    { id: 'f2', userId: 'user1', name: 'Whole Wheat Bread', category: 'Grains & Bread', quantity: 1, unit: 'loaf', expiryDate: d(1), addedDate: d(-3), storageCondition: 'Room Temperature', status: 'expiring', image: '' },
+    { id: 'f3', userId: 'user1', name: 'Chicken Breast', category: 'Meat & Seafood', quantity: 500, unit: 'grams', expiryDate: d(0), addedDate: d(-2), storageCondition: 'Refrigerated', status: 'expiring', image: '' },
+    { id: 'f4', userId: 'user1', name: 'Apples', category: 'Fruits & Vegetables', quantity: 6, unit: 'pieces', expiryDate: d(7), addedDate: d(-1), storageCondition: 'Room Temperature', status: 'fresh', image: '' },
+    { id: 'f5', userId: 'user1', name: 'Canned Tomatoes', category: 'Canned Goods', quantity: 4, unit: 'cans', expiryDate: d(180), addedDate: d(-30), storageCondition: 'Room Temperature', status: 'fresh', image: '' },
+    { id: 'f6', userId: 'user1', name: 'Yogurt', category: 'Dairy & Eggs', quantity: 3, unit: 'cups', expiryDate: d(-1), addedDate: d(-10), storageCondition: 'Refrigerated', status: 'expired', image: '' },
+    { id: 'f7', userId: 'user2', name: 'Rice', category: 'Grains & Bread', quantity: 5, unit: 'kg', expiryDate: d(365), addedDate: d(-15), storageCondition: 'Room Temperature', status: 'fresh', image: '' },
+    { id: 'f8', userId: 'user2', name: 'Salmon Fillet', category: 'Meat & Seafood', quantity: 400, unit: 'grams', expiryDate: d(1), addedDate: d(-1), storageCondition: 'Refrigerated', status: 'expiring', image: '' },
+    { id: 'f9', userId: 'user3', name: 'Bananas', category: 'Fruits & Vegetables', quantity: 12, unit: 'pieces', expiryDate: d(3), addedDate: d(-2), storageCondition: 'Room Temperature', status: 'fresh', image: '' },
+    { id: 'f10', userId: 'user3', name: 'Cheddar Cheese', category: 'Dairy & Eggs', quantity: 1, unit: 'block', expiryDate: d(5), addedDate: d(-7), storageCondition: 'Refrigerated', status: 'fresh', image: '' },
+  ];
+  DB.set('foods', foods);
+
+  const donations = [
+    { id: 'd1', userId: 'user1', userName: 'Sarah Johnson', ngoId: 'ngo1', ngoName: 'Hope Food Bank', foodName: 'Canned Beans', quantity: 10, unit: 'cans', category: 'Canned Goods', expiryDate: d(90), storageCondition: 'Room Temperature', preparedDate: '', pickupLocation: '123 Oak Avenue', pickupTime: '2024-12-20T10:00', photo: '', additionalInfo: 'Unopened, in good condition', status: 'completed', createdAt: d(-10) + 'T09:00:00', updatedAt: d(-7) + 'T15:00:00' },
+    { id: 'd2', userId: 'user2', userName: 'Mike Chen', ngoId: 'ngo1', ngoName: 'Hope Food Bank', foodName: 'Packaged Rice', quantity: 3, unit: 'kg', category: 'Grains & Bread', expiryDate: d(200), storageCondition: 'Room Temperature', preparedDate: '', pickupLocation: '456 Pine Road', pickupTime: '2024-12-22T14:00', photo: '', additionalInfo: '', status: 'delivered', createdAt: d(-3) + 'T11:00:00', updatedAt: d(-1) + 'T16:00:00' },
+    { id: 'd3', userId: 'user1', userName: 'Sarah Johnson', ngoId: '', ngoName: '', foodName: 'Fresh Vegetables Box', quantity: 1, unit: 'box', category: 'Fruits & Vegetables', expiryDate: d(5), storageCondition: 'Refrigerated', preparedDate: d(-1) + 'T08:00', pickupLocation: '123 Oak Avenue', pickupTime: '', photo: '', additionalInfo: 'Mixed vegetables from garden', status: 'posted', createdAt: d(0) + 'T08:30:00', updatedAt: d(0) + 'T08:30:00' },
+    { id: 'd4', userId: 'user3', userName: 'Emily Davis', ngoId: 'ngo3', ngoName: 'Meals for All', foodName: 'Bread Loaves', quantity: 5, unit: 'loaves', category: 'Grains & Bread', expiryDate: d(3), storageCondition: 'Room Temperature', preparedDate: d(0) + 'T06:00', pickupLocation: '789 Elm Street', pickupTime: '2024-12-19T09:00', photo: '', additionalInfo: 'Baked fresh today', status: 'accepted', createdAt: d(-1) + 'T07:00:00', updatedAt: d(0) + 'T10:00:00' },
+  ];
+  DB.set('donations', donations);
+
+  const requests = [
+    { id: 'r1', ngoId: 'ngo1', ngoName: 'Hope Food Bank', foodName: 'Canned Goods', quantity: 50, unit: 'cans', category: 'Canned Goods', urgency: 'high', status: 'open', createdAt: d(-2) + 'T10:00:00' },
+    { id: 'r2', ngoId: 'ngo3', ngoName: 'Meals for All', foodName: 'Fresh Vegetables', quantity: 20, unit: 'kg', category: 'Fruits & Vegetables', urgency: 'medium', status: 'open', createdAt: d(-1) + 'T14:00:00' },
+  ];
+  DB.set('requests', requests);
+
+  const volunteers = [
+    { id: 'v1', name: 'James Wilson', email: 'james@vol.com', phone: '555-0301', availability: 'Weekends', status: 'active', createdAt: d(-30) + 'T00:00:00' },
+    { id: 'v2', name: 'Lisa Park', email: 'lisa@vol.com', phone: '555-0302', availability: 'Weekdays', status: 'active', createdAt: d(-20) + 'T00:00:00' },
+    { id: 'v3', name: 'Robert Kim', email: 'robert@vol.com', phone: '555-0303', availability: 'Flexible', status: 'inactive', createdAt: d(-10) + 'T00:00:00' },
+  ];
+  DB.set('volunteers', volunteers);
+
+  const complaints = [
+    { id: 'c1', userId: 'user2', userName: 'Mike Chen', subject: 'Delayed pickup', description: 'The pickup was scheduled for 2 PM but volunteer arrived at 5 PM.', status: 'open', createdAt: d(-5) + 'T16:00:00' },
+    { id: 'c2', userId: 'user1', userName: 'Sarah Johnson', subject: 'Food quality concern', description: 'Some donated items were near expiry when received by NGO.', status: 'resolved', createdAt: d(-15) + 'T09:00:00' },
+  ];
+  DB.set('complaints', complaints);
+
+  const activity = [
+    { id: 'a1', action: 'User Registration', user: 'Emily Davis', details: 'New user account created', timestamp: d(-3) + 'T09:15:00' },
+    { id: 'a2', action: 'Donation Posted', user: 'Sarah Johnson', details: 'Posted Fresh Vegetables Box for donation', timestamp: d(0) + 'T08:30:00' },
+    { id: 'a3', action: 'Donation Accepted', user: 'Meals for All', details: 'Accepted Bread Loaves donation from Emily Davis', timestamp: d(0) + 'T10:00:00' },
+    { id: 'a4', action: 'NGO Verification', user: 'Admin User', details: 'Verified Meals for All organization', timestamp: d(-5) + 'T14:00:00' },
+    { id: 'a5', action: 'Food Added', user: 'Mike Chen', details: 'Added Salmon Fillet to inventory', timestamp: d(-1) + 'T12:00:00' },
+    { id: 'a6', action: 'Donation Completed', user: 'Hope Food Bank', details: 'Completed Canned Beans donation from Sarah Johnson', timestamp: d(-7) + 'T15:00:00' },
+    { id: 'a7', action: 'Food Request', user: 'Hope Food Bank', details: 'Requested 50 cans of Canned Goods', timestamp: d(-2) + 'T10:00:00' },
+    { id: 'a8', action: 'Complaint Filed', user: 'Mike Chen', details: 'Reported issue with pickup timing', timestamp: d(-5) + 'T16:00:00' },
+  ];
+  DB.set('activity', activity);
+
+  const notifications = [
+    { id: 'n1', userId: 'user1', message: 'Your Whole Wheat Bread expires tomorrow!', type: 'warning', read: false, createdAt: d(0) + 'T08:00:00' },
+    { id: 'n2', userId: 'user1', message: 'Your Chicken Breast expires today. Consume or donate now!', type: 'danger', read: false, createdAt: d(0) + 'T07:00:00' },
+    { id: 'n3', userId: 'user1', message: 'Your Yogurt has expired. Please discard it.', type: 'danger', read: false, createdAt: d(-1) + 'T00:00:00' },
+    { id: 'n4', userId: 'user1', message: 'Your donation "Canned Beans" was completed successfully!', type: 'success', read: true, createdAt: d(-7) + 'T15:00:00' },
+    { id: 'n5', userId: 'ngo1', message: 'New donation available: Fresh Vegetables Box by Sarah Johnson', type: 'info', read: false, createdAt: d(0) + 'T08:30:00' },
+    { id: 'n6', userId: 'ngo1', message: 'Donation "Packaged Rice" has been delivered.', type: 'success', read: true, createdAt: d(-1) + 'T16:00:00' },
+  ];
+  DB.set('notifications', notifications);
+
+  DB.setOne('seeded', true);
+}
+
+// ============================================================
+// UTILITY FUNCTIONS
+// ============================================================
+function toast(msg, type = 'success') {
+  const c = document.getElementById('toast-container');
+  const icons = { success: 'fa-check-circle', error: 'fa-times-circle', info: 'fa-info-circle', warning: 'fa-exclamation-triangle' };
+  const t = document.createElement('div');
+  t.className = `toast toast-${type}`;
+  t.innerHTML = `<i class="fas ${icons[type]}"></i><span>${msg}</span>`;
+  c.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+
+// ============================================================
+// EXPIRY PREDICTION ENGINE (FIXED — dynamic, never stale)
+// ============================================================
+const SHELF_LIFE = {
+  'Fruits & Vegetables': 7, 'Dairy & Eggs': 7, 'Meat & Seafood': 3,
+  'Grains & Bread': 5, 'Canned Goods': 365, 'Beverages': 180,
+  'Snacks': 60, 'Condiments': 180, 'Frozen Foods': 90, 'Prepared Meals': 2
+};
+
+function parseDate(dateStr) {
+  if (!dateStr) return null;
+  let d = new Date(dateStr);
+  if (!isNaN(d.getTime())) return d;
+  const m = String(dateStr).match(/(\d{4})-(\d{2})-(\d{2})/);
+  return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null;
+}
+
+function daysUntil(dateStr) {
+  const d = parseDate(dateStr);
+  if (!d) return null;
+  const now = new Date(); now.setHours(0,0,0,0);
+  const target = new Date(d); target.setHours(0,0,0,0);
+  return Math.round((target - now) / 86400000);
+}
+
+// Live status + waste-risk score (0–100)
+function getFoodStatus(food) {
+  const days = daysUntil(food.expiryDate);
+  if (days === null) return { status: 'unknown', days: null, risk: 0 };
+  if (days < 0) return { status: 'expired', days, risk: 100 };
+  if (days === 0) return { status: 'expiring', days, risk: 90 };
+
+  const shelf = SHELF_LIFE[food.category] || 7;
+  const factor = food.storageCondition === 'Frozen' ? 2.5
+               : food.storageCondition === 'Refrigerated' ? 1.3 : 1;
+  const ratio = days / (shelf * factor);
+  const risk = Math.max(0, Math.min(100, Math.round((1 - Math.min(ratio, 1)) * 100)));
+
+  let status = 'fresh';
+  if (days <= 2 || risk >= 60) status = 'expiring';
+  return { status, days, risk };
+}
+
+// Backward-compatible wrapper (kept from original)
+function foodStatus(expiryDate) {
+  const days = daysUntil(expiryDate);
+  if (days === null) return 'unknown';
+  if (days < 0) return 'expired';
+  if (days <= 2) return 'expiring';
+  return 'fresh';
+}
+
+// Sync ALL stored statuses + auto-fire notifications (deduped)
+function refreshExpiryData() {
+  const foods = DB.get('foods');
+  const notifs = DB.get('notifications');
+  let changed = false;
+
+  foods.forEach(f => {
+    const s = getFoodStatus(f);
+    if (f.status !== s.status) { f.status = s.status; changed = true; }
+
+    if (s.days !== null && s.days <= 2) {
+      const key = `exp_${f.id}_${s.days}`;
+      const msg = s.days < 0 ? `Your ${f.name} has expired. Please discard it.`
+        : s.days === 0 ? `Your ${f.name} expires TODAY! Use or donate now.`
+        : `Your ${f.name} expires in ${s.days} day(s).`;
+      if (!notifs.find(n => n._key === key || (n.userId === f.userId && n.message === msg))) {
+        notifs.unshift({
+          id: DB.genId(), userId: f.userId, _key: key,
+          message: msg,
+          type: s.days <= 0 ? 'danger' : 'warning',
+          read: false, createdAt: new Date().toISOString()
+        });
+        changed = true;
+      }
+    }
+  });
+  if (changed) { DB.set('foods', foods); DB.set('notifications', notifs.slice(0, 100)); }
+}
+
+function formatDate(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function formatDateTime(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+function relativeTime(d) {
+  const diff = Date.now() - new Date(d).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return `${days}d ago`;
+  return formatDate(d);
+}
+
+function showModal(html) {
+  document.getElementById('modal-container').innerHTML = `
+    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal-box">${html}</div>
+    </div>`;
+}
+
+function closeModal() {
+  document.getElementById('modal-container').innerHTML = '';
+}
+
+const CATEGORIES = ['Fruits & Vegetables','Dairy & Eggs','Meat & Seafood','Grains & Bread','Canned Goods','Beverages','Snacks','Condiments','Frozen Foods','Prepared Meals'];
+const STORAGE_CONDITIONS = ['Room Temperature','Refrigerated','Frozen'];
+const UNITS = ['pieces','kg','grams','liters','ml','cans','boxes','loaves','cups','bags','bottles','packs'];
+
+function destroyCharts() {
+  Object.values(state.charts).forEach(c => { try { c.destroy(); } catch {} });
+  state.charts = {};
+}
+
+// Shared helpers
+function logActivity(action, details) {
+  const activity = DB.get('activity');
+  activity.unshift({ id: DB.genId(), action, user: state.currentUser.name, details, timestamp: new Date().toISOString() });
+  DB.set('activity', activity.slice(0, 100));
+}
+
+function notifyUser(userId, message, type = 'info') {
+  const notifs = DB.get('notifications');
+  notifs.unshift({ id: DB.genId(), userId, message, type, read: false, createdAt: new Date().toISOString() });
+  DB.set('notifications', notifs);
+}
+
+function foodStatusBadge(f) {
+  const info = getFoodStatus(f);
+  if (info.status === 'expired') return '<span class="badge badge-expired">Expired</span>';
+  if (info.status === 'expiring') return `<span class="badge badge-expiring">${info.days}d left</span>`;
+  if (info.status === 'unknown') return '<span class="badge badge-expired">No date</span>';
+  return `<span class="badge badge-fresh">${info.days}d left</span>`;
+}
+
+function donationBadge(status) {
+  const map = {
+    posted: ['badge-posted', 'Posted'],
+    accepted: ['badge-accepted', 'Accepted'],
+    picked_up: ['badge-pickup', 'Picked Up'],
+    delivered: ['badge-delivered', 'Delivered'],
+    completed: ['badge-completed', 'Completed'],
+    cancelled: ['badge-expired', 'Cancelled']
+  };
+  const [cls, label] = map[status] || ['badge-posted', status];
+  return `<span class="badge ${cls}">${label}</span>`;
+}
+
+// ============================================================
+// AUTH PAGES
+// ============================================================
+function renderAuth() {
+  return `
+  <div class="auth-bg">
+    <div style="width:100%;max-width:440px;padding:20px;position:relative;z-index:1;">
+      <div style="text-align:center;margin-bottom:36px;">
+        <div style="display:inline-flex;align-items:center;gap:12px;margin-bottom:12px;">
+          <div style="width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;">
+            <i class="fas fa-leaf" style="font-size:22px;color:#070d0a;"></i>
+          </div>
+          <h1 style="font-size:28px;font-weight:700;letter-spacing:-0.5px;">FoodGuard<span style="color:var(--accent);">AI</span></h1>
+        </div>
+        <p style="color:var(--muted);font-size:14px;">AI-Powered Food Expiry & Donation Management</p>
+      </div>
+      <div class="card" style="padding:32px;">
+        <div style="display:flex;gap:0;margin-bottom:28px;background:var(--bg);border-radius:10px;padding:4px;">
+          <button id="auth-login-tab" class="tab-btn active" style="flex:1;text-align:center;padding:10px;" onclick="switchAuthTab('login')">Sign In</button>
+          <button id="auth-register-tab" class="tab-btn" style="flex:1;text-align:center;padding:10px;" onclick="switchAuthTab('register')">Register</button>
+        </div>
+        <div id="auth-login-form">
+          <div style="margin-bottom:16px;">
+            <label>Email</label>
+            <input type="email" id="login-email" class="input-field" placeholder="Enter your email" value="user@test.com">
+          </div>
+          <div style="margin-bottom:24px;">
+            <label>Password</label>
+            <input type="password" id="login-password" class="input-field" placeholder="Enter password" value="user123">
+          </div>
+          <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;" onclick="handleLogin()">
+            <i class="fas fa-sign-in-alt"></i> Sign In
+          </button>
+          
+        </div>
+        <div id="auth-register-form" style="display:none;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+            <div><label>Full Name</label><input type="text" id="reg-name" class="input-field" placeholder="Your name"></div>
+            <div><label>Role</label>
+              <select id="reg-role" class="input-field" onchange="toggleOrgFields()">
+                <option value="user">Individual User</option>
+                <option value="ngo">NGO / Organization</option>
+              </select>
+            </div>
+          </div>
+          <div id="org-fields" style="display:none;margin-bottom:16px;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+              <div><label>Organization Name</label><input type="text" id="reg-orgname" class="input-field" placeholder="Org name"></div>
+              <div><label>Org Type</label>
+                <select id="reg-orgtype" class="input-field">
+                  <option>Food Bank</option><option>Community Kitchen</option><option>Meal Program</option><option>Shelter</option><option>Other</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div style="margin-bottom:16px;"><label>Email</label><input type="email" id="reg-email" class="input-field" placeholder="you@email.com"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+            <div><label>Phone</label><input type="text" id="reg-phone" class="input-field" placeholder="555-0000"></div>
+            <div><label>Password</label><input type="password" id="reg-password" class="input-field" placeholder="Min 6 chars"></div>
+          </div>
+          <div style="margin-bottom:24px;"><label>Address</label><input type="text" id="reg-address" class="input-field" placeholder="Your address"></div>
+          <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;" onclick="handleRegister()">
+            <i class="fas fa-user-plus"></i> Create Account
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function switchAuthTab(tab) {
+  document.getElementById('auth-login-tab').className = 'tab-btn' + (tab === 'login' ? ' active' : '');
+  document.getElementById('auth-register-tab').className = 'tab-btn' + (tab === 'register' ? ' active' : '');
+  document.getElementById('auth-login-form').style.display = tab === 'login' ? 'block' : 'none';
+  document.getElementById('auth-register-form').style.display = tab === 'register' ? 'block' : 'none';
+}
+
+function toggleOrgFields() {
+  document.getElementById('org-fields').style.display = document.getElementById('reg-role').value === 'ngo' ? 'block' : 'none';
+}
+
+function handleLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  if (!email || !password) return toast('Please fill in all fields', 'error');
+  const users = DB.get('users');
+  const user = users.find(u => u.email === email && u.password === password);
+  if (!user) return toast('Invalid email or password', 'error');
+  if (user.role === 'ngo' && !user.verified) return toast('Your NGO account is pending verification', 'warning');
+  state.currentUser = user;
+  DB.setOne('currentUser', user);
+  state.currentPage = 'dashboard';
+  renderApp();
+  toast(`Welcome back, ${user.name}!`, 'success');
+}
+
+function handleRegister() {
+  const name = document.getElementById('reg-name').value.trim();
+  const role = document.getElementById('reg-role').value;
+  const email = document.getElementById('reg-email').value.trim();
+  const phone = document.getElementById('reg-phone').value.trim();
+  const password = document.getElementById('reg-password').value;
+  const address = document.getElementById('reg-address').value.trim();
+  if (!name || !email || !password || !phone || !address) return toast('Please fill in all required fields', 'error');
+  if (password.length < 6) return toast('Password must be at least 6 characters', 'error');
+  const users = DB.get('users');
+  if (users.find(u => u.email === email)) return toast('Email already registered', 'error');
+  const newUser = {
+    id: DB.genId(), name, email, password, role, phone, address,
+    verified: role !== 'ngo',
+    createdAt: new Date().toISOString()
+  };
+  if (role === 'ngo') {
+    newUser.orgName = document.getElementById('reg-orgname').value.trim() || name;
+    newUser.orgType = document.getElementById('reg-orgtype').value;
+  }
+  users.push(newUser);
+  DB.set('users', users);
+  state.currentUser = newUser;
+  DB.setOne('currentUser', newUser);
+  state.currentPage = 'dashboard';
+  renderApp();
+  if (role === 'ngo') {
+    toast('Account created! Pending admin verification.', 'warning');
+  } else {
+    toast('Welcome to FoodGuard AI!', 'success');
+  }
+}
+
+function handleLogout() {
+  state.currentUser = null;
+  DB.remove('currentUser');
+  destroyCharts();
+  renderApp();
+  toast('Logged out successfully', 'info');
+}
+
+// ============================================================
+// MAIN APP LAYOUT
+// ============================================================
+function getNavItems() {
+  const role = state.currentUser.role;
+  const items = [];
+  items.push({ section: 'Main' });
+  items.push({ id: 'dashboard', icon: 'fa-th-large', label: 'Dashboard' });
+
+  if (role === 'user') {
+    items.push({ section: 'Food Management' });
+    items.push({ id: 'my-food', icon: 'fa-box-open', label: 'My Food Inventory' });
+    items.push({ id: 'add-food', icon: 'fa-plus-circle', label: 'Add Food Item' });
+    items.push({ id: 'ai-scanner', icon: 'fa-brain', label: 'AI Scanner' });
+    items.push({ id: 'waste-prediction', icon: 'fa-chart-line', label: 'Waste Prediction' });
+    items.push({ section: 'Donations' });
+    items.push({ id: 'donate', icon: 'fa-hand-holding-heart', label: 'Donate Food' });
+    items.push({ id: 'my-donations', icon: 'fa-history', label: 'My Donations' });
+    items.push({ id: 'impact', icon: 'fa-seedling', label: 'My Impact' });
+  }
+
+  if (role === 'ngo') {
+    items.push({ section: 'Donations' });
+    items.push({ id: 'available-donations', icon: 'fa-search', label: 'Available Donations' });
+    items.push({ id: 'my-acceptances', icon: 'fa-check-double', label: 'My Acceptances' });
+    items.push({ id: 'request-food', icon: 'fa-hand-paper', label: 'Request Food' });
+    items.push({ id: 'pickup-schedule', icon: 'fa-truck', label: 'Pickup Schedule' });
+    items.push({ section: 'History' });
+    items.push({ id: 'ngo-history', icon: 'fa-history', label: 'Donation History' });
+  }
+
+  if (role === 'admin') {
+    items.push({ section: 'Management' });
+    items.push({ id: 'manage-users', icon: 'fa-users', label: 'Manage Users' });
+    items.push({ id: 'manage-ngos', icon: 'fa-building', label: 'Verify NGOs' });
+    items.push({ id: 'manage-foods', icon: 'fa-boxes', label: 'Food Records' });
+    items.push({ id: 'manage-donations', icon: 'fa-exchange-alt', label: 'Monitor Donations' });
+    items.push({ id: 'manage-volunteers', icon: 'fa-people-carry', label: 'Volunteers' });
+    items.push({ section: 'Analytics' });
+    items.push({ id: 'reports', icon: 'fa-chart-bar', label: 'Reports' });
+    items.push({ section: 'System' });
+    items.push({ id: 'complaints', icon: 'fa-exclamation-circle', label: 'Complaints' });
+    items.push({ id: 'activity-log', icon: 'fa-list-alt', label: 'Activity Log' });
+  }
+
+  items.push({ section: 'Account' });
+  const unreadCount = DB.get('notifications').filter(n => n.userId === state.currentUser.id && !n.read).length;
+  items.push({ id: 'notifications', icon: 'fa-bell', label: 'Notifications', badge: unreadCount || null });
+  items.push({ id: 'profile', icon: 'fa-user-cog', label: 'Profile' });
+
+  return items;
+}
+
+function renderSidebar() {
+  const items = getNavItems();
+  let html = `
+  <div style="padding:20px 20px 12px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);margin-bottom:8px;">
+    <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+      <i class="fas fa-leaf" style="font-size:16px;color:#070d0a;"></i>
+    </div>
+    <div>
+      <div style="font-family:'Space Grotesk';font-weight:700;font-size:16px;line-height:1;">FoodGuard<span style="color:var(--accent);">AI</span></div>
+      <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">${state.currentUser.role === 'admin' ? 'Administrator' : state.currentUser.role === 'ngo' ? 'Organization' : 'User'}</div>
+    </div>
+  </div>`;
+  items.forEach(item => {
+    if (item.section) {
+      html += `<div class="nav-section">${item.section}</div>`;
+    } else {
+      const active = state.currentPage === item.id ? ' active' : '';
+      const badge = item.badge ? `<span class="notification-dot" style="margin-left:auto;"></span>` : '';
+      html += `<div class="nav-item${active}" onclick="navigate('${item.id}')"><i class="fas ${item.icon}"></i><span>${item.label}</span>${badge}</div>`;
+    }
+  });
+  html += `
+  <div style="padding:16px 20px;margin-top:auto;border-top:1px solid var(--border);">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+      <div style="width:34px;height:34px;border-radius:50%;background:var(--card2);display:flex;align-items:center;justify-content:center;border:1px solid var(--border);">
+        <i class="fas fa-user" style="font-size:13px;color:var(--accent);"></i>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${state.currentUser.name}</div>
+        <div style="font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${state.currentUser.email}</div>
+      </div>
+    </div>
+    <button class="btn btn-secondary btn-sm" style="width:100%;justify-content:center;" onclick="handleLogout()">
+      <i class="fas fa-sign-out-alt"></i> Sign Out
+    </button>
+  </div>`;
+  return html;
+}
+
+function navigate(page) {
+  destroyCharts();
+  state.currentPage = page;
+  renderApp();
+}
+
+function renderApp() {
+  if (state.currentUser) refreshExpiryData(); // ← LIVE EXPIRY SYNC (the fix)
+  const app = document.getElementById('app');
+  if (!state.currentUser) {
+    app.innerHTML = renderAuth();
+    return;
+  }
+  app.innerHTML = `
+  <div style="display:flex;height:100vh;">
+    <aside class="sidebar" id="sidebar">${renderSidebar()}</aside>
+    <main class="main-content" id="main-content">
+      <div class="mobile-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')">
+        <i class="fas fa-bars" style="color:var(--fg);"></i>
+      </div>
+      <div style="padding:28px 32px;position:relative;z-index:1;" id="page-content">
+        ${renderPage()}
+      </div>
+    </main>
+  </div>`;
+}
+
+function renderPage() {
+  const p = state.currentPage;
+  const pages = {
+    'dashboard': renderDashboard,
+    'my-food': renderMyFood,
+    'add-food': renderAddFood,
+    'ai-scanner': renderAIScanner,
+    'waste-prediction': renderWastePrediction,
+    'donate': renderDonate,
+    'my-donations': renderMyDonations,
+    'impact': renderImpact,
+    'available-donations': renderAvailableDonations,
+    'my-acceptances': renderMyAcceptances,
+    'request-food': renderRequestFood,
+    'pickup-schedule': renderPickupSchedule,
+    'ngo-history': renderNgoHistory,
+    'manage-users': renderManageUsers,
+    'manage-ngos': renderManageNgos,
+    'manage-foods': renderManageFoods,
+    'manage-donations': renderManageDonations,
+    'manage-volunteers': renderManageVolunteers,
+    'reports': renderReports,
+    'complaints': renderComplaints,
+    'activity-log': renderActivityLog,
+    'notifications': renderNotifications,
+    'profile': renderProfile,
+  };
+  return (pages[p] || renderDashboard)();
+}
+
+// ============================================================
+// USER DASHBOARD
+// ============================================================
+function renderDashboard() {
+  const role = state.currentUser.role;
+  if (role === 'user') return renderUserDashboard();
+  if (role === 'ngo') return renderNgoDashboard();
+  return renderAdminDashboard();
+}
+
+function renderUserDashboard() {
+  const foods = DB.get('foods').filter(f => f.userId === state.currentUser.id);
+  const fresh = foods.filter(f => f.status === 'fresh').length;
+  const expiring = foods.filter(f => f.status === 'expiring').length;
+  const expired = foods.filter(f => f.status === 'expired').length;
+  const donations = DB.get('donations').filter(d => d.userId === state.currentUser.id);
+  const completedDonations = donations.filter(d => d.status === 'completed').length;
+  const totalDonated = donations.filter(d => d.status === 'completed').reduce((s,d) => s + d.quantity, 0);
+  const notifs = DB.get('notifications').filter(n => n.userId === state.currentUser.id && !n.read).length;
+
+  setTimeout(() => {
+    const ctx = document.getElementById('dash-chart');
+    if (ctx) {
+      state.charts.dash = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Fresh', 'Expiring Soon', 'Expired'],
+          datasets: [{ data: [fresh, expiring, expired], backgroundColor: ['#34d399','#f59e0b','#ef4444'], borderWidth: 0, spacing: 3 }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          cutout: '70%',
+          plugins: { legend: { position: 'bottom', labels: { color: '#6b8f7a', padding: 16, font: { family: 'DM Sans', size: 12 } } } }
+        }
+      });
+    }
+  }, 50);
+
+  const expiringItems = foods
+    .map(f => ({ ...f, info: getFoodStatus(f) }))
+    .filter(f => f.info.status === 'expiring' || f.info.status === 'expired')
+    .sort((a, b) => (a.info.days ?? 999) - (b.info.days ?? 999))
+    .slice(0, 5);
+
+  return `
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:12px;">
+    <div>
+      <h2 style="font-size:26px;font-weight:700;letter-spacing:-0.5px;">Welcome back, ${esc(state.currentUser.name.split(' ')[0])}</h2>
+      <p style="color:var(--muted);font-size:14px;margin-top:4px;">Here's your food inventory overview</p>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-primary" onclick="navigate('add-food')"><i class="fas fa-plus"></i> Add Food</button>
+      <button class="btn btn-secondary" onclick="navigate('ai-scanner')"><i class="fas fa-camera"></i> AI Scan</button>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:28px;">
+    <div class="stat-card green">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:8px;"><i class="fas fa-box-open" style="margin-right:6px;"></i>Total Items</div>
+      <div style="font-size:32px;font-weight:700;font-family:'Space Grotesk';">${foods.length}</div>
+    </div>
+    <div class="stat-card green">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:8px;"><i class="fas fa-check-circle" style="margin-right:6px;color:var(--accent);"></i>Fresh</div>
+      <div style="font-size:32px;font-weight:700;font-family:'Space Grotesk';color:var(--accent);">${fresh}</div>
+    </div>
+    <div class="stat-card amber">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:8px;"><i class="fas fa-exclamation-triangle" style="margin-right:6px;color:var(--amber);"></i>Expiring Soon</div>
+      <div style="font-size:32px;font-weight:700;font-family:'Space Grotesk';color:var(--amber);">${expiring}</div>
+    </div>
+    <div class="stat-card red">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:8px;"><i class="fas fa-times-circle" style="margin-right:6px;color:var(--danger);"></i>Expired</div>
+      <div style="font-size:32px;font-weight:700;font-family:'Space Grotesk';color:var(--danger);">${expired}</div>
+    </div>
+    <div class="stat-card blue">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:8px;"><i class="fas fa-hand-holding-heart" style="margin-right:6px;color:var(--info);"></i>Donated</div>
+      <div style="font-size:32px;font-weight:700;font-family:'Space Grotesk';color:var(--info);">${totalDonated}</div>
+      <div style="font-size:11px;color:var(--muted);">${completedDonations} donations completed</div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:28px;">
+    <div class="card" style="max-width:320px;">
+      <h3 style="font-size:15px;font-weight:600;margin-bottom:16px;">Inventory Status</h3>
+      <div style="height:220px;position:relative;"><canvas id="dash-chart"></canvas></div>
+    </div>
+    <div class="card" style="flex:1;">
+      <h3 style="font-size:15px;font-weight:600;margin-bottom:16px;">
+        <i class="fas fa-bell" style="color:var(--amber);margin-right:6px;"></i>Needs Attention
+        ${notifs > 0 ? `<span style="background:var(--danger);color:#fff;font-size:11px;padding:2px 8px;border-radius:10px;margin-left:8px;">${notifs}</span>` : ''}
+      </h3>
+      ${expiringItems.length === 0 ? '<p style="color:var(--muted);font-size:13px;">All items are fresh!</p>' :
+        expiringItems.map(f => {
+          const isExpired = f.info.status === 'expired';
+          return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);">
+            <div>
+              <div style="font-size:14px;font-weight:500;">${esc(f.name)}</div>
+              <div style="font-size:11px;color:var(--muted);">${esc(f.category)} · ${f.quantity} ${esc(f.unit)}</div>
+            </div>
+            <div style="text-align:right;">
+              ${isExpired ? '<span class="badge badge-expired">Expired</span>' : `<span class="badge badge-expiring">${f.info.days}d left</span>`}
+              ${!isExpired ? `<button class="btn btn-amber btn-sm" style="margin-top:4px;" onclick="quickDonate('${f.id}')"><i class="fas fa-hand-holding-heart"></i> Donate</button>` : ''}
+            </div>
+          </div>`;
+        }).join('')}
+    </div>
+  </div>`;
+}
+
+function quickDonate(foodId) {
+  const food = DB.get('foods').find(f => f.id === foodId);
+  if (!food) return;
+  state._prefillDonation = food;
+  navigate('donate');
+}
+
+// ============================================================
+// NGO DASHBOARD
+// ============================================================
+function renderNgoDashboard() {
+  const donations = DB.get('donations').filter(d => d.ngoId === state.currentUser.id);
+  const available = DB.get('donations').filter(d => d.status === 'posted');
+  const accepted = donations.filter(d => d.status === 'accepted').length;
+  const completed = donations.filter(d => d.status === 'completed').length;
+  const totalReceived = donations.filter(d => d.status === 'completed').reduce((s,d) => s + d.quantity, 0);
+  const requests = DB.get('requests').filter(r => r.ngoId === state.currentUser.id && r.status === 'open').length;
+
+  return `
+  <div style="margin-bottom:28px;">
+    <h2 style="font-size:26px;font-weight:700;letter-spacing:-0.5px;">${esc(state.currentUser.orgName || state.currentUser.name)}</h2>
+    <p style="color:var(--muted);font-size:14px;margin-top:4px;">Organization Dashboard</p>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:28px;">
+    <div class="stat-card blue"><div style="font-size:12px;color:var(--muted);margin-bottom:8px;"><i class="fas fa-search" style="margin-right:6px;"></i>Available Donations</div><div style="font-size:32px;font-weight:700;font-family:'Space Grotesk';color:var(--info);">${available.length}</div></div>
+    <div class="stat-card amber"><div style="font-size:12px;color:var(--muted);margin-bottom:8px;"><i class="fas fa-handshake" style="margin-right:6px;"></i>Accepted</div><div style="font-size:32px;font-weight:700;font-family:'Space Grotesk';color:var(--amber);">${accepted}</div></div>
+    <div class="stat-card green"><div style="font-size:12px;color:var(--muted);margin-bottom:8px;"><i class="fas fa-check-double" style="margin-right:6px;"></i>Completed</div><div style="font-size:32px;font-weight:700;font-family:'Space Grotesk';color:var(--accent);">${completed}</div></div>
+    <div class="stat-card green"><div style="font-size:12px;color:var(--muted);margin-bottom:8px;"><i class="fas fa-weight-hanging" style="margin-right:6px;"></i>Total Received</div><div style="font-size:32px;font-weight:700;font-family:'Space Grotesk';color:var(--accent);">${totalReceived}</div><div style="font-size:11px;color:var(--muted);">units across all donations</div></div>
+    <div class="stat-card amber"><div style="font-size:12px;color:var(--muted);margin-bottom:8px;"><i class="fas fa-clipboard-list" style="margin-right:6px;"></i>Open Requests</div><div style="font-size:32px;font-weight:700;font-family:'Space Grotesk';color:var(--amber);">${requests}</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+    <div class="card">
+      <h3 style="font-size:15px;font-weight:600;margin-bottom:16px;">Recent Available Donations</h3>
+      ${available.length === 0 ? '<p style="color:var(--muted);font-size:13px;">No available donations right now.</p>' :
+        available.slice(0, 4).map(d => `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);">
+          <div>
+            <div style="font-size:14px;font-weight:500;">${esc(d.foodName)}</div>
+            <div style="font-size:11px;color:var(--muted);">${esc(d.userName)} · ${d.quantity} ${esc(d.unit)} · ${relativeTime(d.createdAt)}</div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="acceptDonation('${d.id}')">Accept</button>
+        </div>`).join('')}
+    </div>
+    <div class="card">
+      <h3 style="font-size:15px;font-weight:600;margin-bottom:16px;">My Active Pickups</h3>
+      ${donations.filter(d => d.status === 'accepted' || d.status === 'picked_up').length === 0 ? '<p style="color:var(--muted);font-size:13px;">No active pickups.</p>' :
+        donations.filter(d => d.status === 'accepted' || d.status === 'picked_up').slice(0, 4).map(d => `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);">
+          <div>
+            <div style="font-size:14px;font-weight:500;">${esc(d.foodName)}</div>
+            <div style="font-size:11px;color:var(--muted);">${d.pickupTime ? 'Pickup: ' + formatDateTime(d.pickupTime) : 'Pickup not scheduled'}</div>
+          </div>
+          ${donationBadge(d.status)}
+        </div>`).join('')}
+    </div>
+  </div>
+  <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;">
+    <button class="btn btn-primary" onclick="navigate('available-donations')"><i class="fas fa-search"></i> Browse Donations</button>
+    <button class="btn btn-secondary" onclick="navigate('request-food')"><i class="fas fa-hand-paper"></i> Request Food</button>
+    <button class="btn btn-secondary" onclick="navigate('pickup-schedule')"><i class="fas fa-truck"></i> Schedule Pickups</button>
+  </div>`;
+}
+
+// ============================================================
+// ADMIN DASHBOARD
+// ============================================================
+function renderAdminDashboard() {
+  const users = DB.get('users');
+  const foods = DB.get('foods');
+  const donations = DB.get('donations');
+  const pendingNgos = users.filter(u => u.role === 'ngo' && !u.verified).length;
+  const openComplaints = DB.get('complaints').filter(c => c.status === 'open').length;
+  const completed = donations.filter(d => d.status === 'completed').length;
+  const activity = DB.get('activity').slice(0, 6);
+
+  setTimeout(() => {
+    const ctx = document.getElementById('admin-chart');
+    if (ctx) {
+      const counts = ['posted','accepted','picked_up','delivered','completed'].map(s => donations.filter(d => d.status === s).length);
+      state.charts.admin = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Posted', 'Accepted', 'Picked Up', 'Delivered', 'Completed'],
+          datasets: [{ data: counts, backgroundColor: ['#3b82f6','#f59e0b','#a855f7','#34d399','#10b981'], borderWidth: 0, spacing: 3 }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false, cutout: '70%',
+          plugins: { legend: { position: 'bottom', labels: { color: '#6b8f7a', padding: 14, font: { family: 'DM Sans', size: 11 } } } }
+        }
+      });
+    }
+  }, 50);
+
+  return `
+  <div style="margin-bottom:28px;">
+    <h2 style="font-size:26px;font-weight:700;letter-spacing:-0.5px;">Admin Dashboard</h2>
+    <p style="color:var(--muted);font-size:14px;margin-top:4px;">Platform overview & system health</p>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:28px;">
+    <div class="stat-card blue"><div style="font-size:12px;color:var(--muted);margin-bottom:8px;"><i class="fas fa-users" style="margin-right:6px;"></i>Total Users</div><div style="font-size:32px;font-weight:700;font-family:'Space Grotesk';color:var(--info);">${users.filter(u => u.role === 'user').length}</div></div>
+    <div class="stat-card green"><div style="font-size:12px;color:var(--muted);margin-bottom:8px;"><i class="fas fa-building" style="margin-right:6px;"></i>NGOs</div><div style="font-size:32px;font-weight:700;font-family:'Space Grotesk';color:var(--accent);">${users.filter(u => u.role === 'ngo').length}</div><div style="font-size:11px;color:var(--muted);">${pendingNgos} pending verification</div></div>
+    <div class="stat-card amber"><div style="font-size:12px;color:var(--muted);margin-bottom:8px;"><i class="fas fa-boxes" style="margin-right:6px;"></i>Food Items Tracked</div><div style="font-size:32px;font-weight:700;font-family:'Space Grotesk';color:var(--amber);">${foods.length}</div></div>
+    <div class="stat-card green"><div style="font-size:12px;color:var(--muted);margin-bottom:8px;"><i class="fas fa-hand-holding-heart" style="margin-right:6px;"></i>Donations Completed</div><div style="font-size:32px;font-weight:700;font-family:'Space Grotesk';color:var(--accent);">${completed}</div></div>
+    <div class="stat-card red"><div style="font-size:12px;color:var(--muted);margin-bottom:8px;"><i class="fas fa-exclamation-circle" style="margin-right:6px;"></i>Open Complaints</div><div style="font-size:32px;font-weight:700;font-family:'Space Grotesk';color:var(--danger);">${openComplaints}</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:320px 1fr;gap:20px;">
+    <div class="card">
+      <h3 style="font-size:15px;font-weight:600;margin-bottom:16px;">Donation Pipeline</h3>
+      <div style="height:240px;position:relative;"><canvas id="admin-chart"></canvas></div>
+    </div>
+    <div class="card">
+      <h3 style="font-size:15px;font-weight:600;margin-bottom:16px;"><i class="fas fa-list-alt" style="color:var(--info);margin-right:6px;"></i>Recent Activity</h3>
+      ${activity.map(a => `
+      <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);">
+        <div style="width:32px;height:32px;border-radius:8px;background:var(--card2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <i class="fas fa-bolt" style="font-size:12px;color:var(--accent);"></i>
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:500;">${esc(a.action)}</div>
+          <div style="font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(a.details)}</div>
+        </div>
+        <div style="font-size:11px;color:var(--muted);white-space:nowrap;">${relativeTime(a.timestamp)}</div>
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+// ============================================================
+// MY FOOD INVENTORY
+// ============================================================
+function renderMyFood() {
+  const all = DB.get('foods').filter(f => f.userId === state.currentUser.id)
+    .map(f => ({ ...f, info: getFoodStatus(f) }));
+  state._foodSearch = state._foodSearch || '';
+  state._foodCat = state._foodCat || 'all';
+
+  let list = all;
+  if (state._foodCat !== 'all') list = list.filter(f => f.category === state._foodCat);
+  if (state._foodSearch) list = list.filter(f => f.name.toLowerCase().includes(state._foodSearch.toLowerCase()));
+  list.sort((a, b) => (a.info.days ?? 9999) - (b.info.days ?? 9999));
+
+  return `
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+    <div>
+      <h2 style="font-size:24px;font-weight:700;">My Food Inventory</h2>
+      <p style="color:var(--muted);font-size:14px;margin-top:4px;">${all.length} items · expiry statuses update automatically</p>
+    </div>
+    <button class="btn btn-primary" onclick="navigate('add-food')"><i class="fas fa-plus"></i> Add Item</button>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 220px;gap:12px;margin-bottom:20px;">
+    <input class="input-field" placeholder="Search items..." value="${esc(state._foodSearch)}" oninput="state._foodSearch=this.value;renderApp();setTimeout(()=>{const el=document.querySelector('.input-field[placeholder*=Search]');if(el){el.focus();}},0)">
+    <select class="input-field" onchange="state._foodCat=this.value;renderApp()">
+      <option value="all">All Categories</option>
+      ${CATEGORIES.map(c => `<option ${state._foodCat === c ? 'selected' : ''}>${c}</option>`).join('')}
+    </select>
+  </div>
+
+  ${list.length === 0 ? '<div class="card"><p style="color:var(--muted);font-size:14px;text-align:center;padding:30px;">No items found. Add your first food item!</p></div>' : `
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;">
+    ${list.map(f => `
+    <div class="card card-glow">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+        <div>
+          <h4 style="font-size:16px;font-weight:600;">${esc(f.name)}</h4>
+          <p style="font-size:12px;color:var(--muted);margin-top:2px;">${esc(f.category)} · ${f.quantity} ${esc(f.unit)}</p>
+        </div>
+        ${foodStatusBadge(f)}
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+        <div class="confidence-bar">
+          <div class="confidence-fill" style="width:${f.info.risk}%;background:${f.info.risk > 70 ? 'var(--danger)' : f.info.risk > 40 ? 'var(--amber)' : 'var(--accent)'};"></div>
+        </div>
+        <span style="font-size:11px;color:var(--muted);min-width:70px;">${f.info.risk}% risk</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:14px;">
+        <span><i class="fas fa-calendar-times" style="margin-right:4px;"></i>Expires: ${formatDate(f.expiryDate)}</span>
+        <span><i class="fas fa-temperature-low" style="margin-right:4px;"></i>${esc(f.storageCondition)}</span>
+      </div>
+      <div style="display:flex;gap:8px;">
+        ${f.info.status !== 'expired' ? `<button class="btn btn-amber btn-sm" onclick="quickDonate('${f.id}')"><i class="fas fa-hand-holding-heart"></i> Donate</button>` : ''}
+        <button class="btn btn-secondary btn-sm" onclick="editFood('${f.id}')"><i class="fas fa-edit"></i> Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="confirmDeleteFood('${f.id}')"><i class="fas fa-trash"></i></button>
+      </div>
+    </div>`).join('')}
+  </div>`}`;
+}
+
+function editFood(id) {
+  const f = DB.get('foods').find(x => x.id === id);
+  if (!f) return;
+  showModal(`
+    <h3 style="font-size:18px;font-weight:700;margin-bottom:20px;">Edit Food Item</h3>
+    <div style="margin-bottom:14px;"><label>Food Name</label><input id="ef-name" class="input-field" value="${esc(f.name)}"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+      <div><label>Category</label><select id="ef-cat" class="input-field">${CATEGORIES.map(c => `<option ${f.category === c ? 'selected' : ''}>${c}</option>`).join('')}</select></div>
+      <div><label>Storage</label><select id="ef-storage" class="input-field">${STORAGE_CONDITIONS.map(c => `<option ${f.storageCondition === c ? 'selected' : ''}>${c}</option>`).join('')}</select></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px;">
+      <div><label>Quantity</label><input type="number" id="ef-qty" class="input-field" value="${f.quantity}" min="1"></div>
+      <div><label>Unit</label><select id="ef-unit" class="input-field">${UNITS.map(u => `<option ${f.unit === u ? 'selected' : ''}>${u}</option>`).join('')}</select></div>
+      <div><label>Expiry Date</label><input type="date" id="ef-expiry" class="input-field" value="${f.expiryDate || ''}"></div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveFoodEdit('${f.id}')"><i class="fas fa-save"></i> Save Changes</button>
+    </div>`);
+}
+
+function saveFoodEdit(id) {
+  const foods = DB.get('foods');
+  const f = foods.find(x => x.id === id);
+  if (!f) return;
+  f.name = document.getElementById('ef-name').value.trim() || f.name;
+  f.category = document.getElementById('ef-cat').value;
+  f.storageCondition = document.getElementById('ef-storage').value;
+  f.quantity = parseFloat(document.getElementById('ef-qty').value) || f.quantity;
+  f.unit = document.getElementById('ef-unit').value;
+  f.expiryDate = document.getElementById('ef-expiry').value || f.expiryDate;
+  f.status = getFoodStatus(f).status;
+  DB.set('foods', foods);
+  logActivity('Food Updated', `Updated ${f.name} in inventory`);
+  closeModal();
+  renderApp();
+  toast('Item updated successfully', 'success');
+}
+
+function confirmDeleteFood(id) {
+  const f = DB.get('foods').find(x => x.id === id);
+  if (!f) return;
+  showModal(`
+    <h3 style="font-size:18px;font-weight:700;margin-bottom:12px;">Delete Item?</h3>
+    <p style="color:var(--fg2);font-size:14px;margin-bottom:24px;">Are you sure you want to delete <b>${esc(f.name)}</b>? This cannot be undone.</p>
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-danger" onclick="doDeleteFood('${f.id}')"><i class="fas fa-trash"></i> Delete</button>
+    </div>`);
+}
+
+function doDeleteFood(id) {
+  let foods = DB.get('foods');
+  const f = foods.find(x => x.id === id);
+  foods = foods.filter(x => x.id !== id);
+  DB.set('foods', foods);
+  if (f) logActivity('Food Deleted', `Deleted ${f.name} from inventory`);
+  closeModal();
+  renderApp();
+  toast('Item deleted', 'info');
+}
+
+// ============================================================
+// ADD FOOD
+// ============================================================
+function renderAddFood() {
+  const pre = state._scanResult || null;
+  const today = new Date().toISOString().split('T')[0];
+  return `
+  <h2 style="font-size:24px;font-weight:700;margin-bottom:4px;">Add Food Item</h2>
+  <p style="color:var(--muted);font-size:14px;margin-bottom:24px;">Track expiry dates and get automatic alerts before food goes to waste</p>
+  ${pre ? `<div class="card" style="margin-bottom:20px;border-color:var(--accent);"><i class="fas fa-robot" style="color:var(--accent);margin-right:8px;"></i><span style="font-size:13px;color:var(--accent);">Pre-filled from AI Scanner results — review and adjust if needed.</span></div>` : ''}
+  <div class="card" style="max-width:640px;">
+    <div style="margin-bottom:16px;"><label>Food Name *</label><input id="add-name" class="input-field" placeholder="e.g. Organic Milk" value="${pre ? esc(pre.name || '') : ''}"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+      <div><label>Category *</label><select id="add-category" class="input-field">${CATEGORIES.map(c => `<option ${(pre && pre.category === c) ? 'selected' : ''}>${c}</option>`).join('')}</select></div>
+      <div><label>Storage Condition</label><select id="add-storage" class="input-field">${STORAGE_CONDITIONS.map(c => `<option ${(pre && pre.storageCondition === c) ? 'selected' : ''}>${c}</option>`).join('')}</select></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;">
+      <div><label>Quantity *</label><input type="number" id="add-qty" class="input-field" value="${pre ? (pre.quantity || 1) : 1}" min="1"></div>
+      <div><label>Unit</label><select id="add-unit" class="input-field">${UNITS.map(u => `<option>${u}</option>`).join('')}</select></div>
+      <div><label>Expiry Date *</label><input type="date" id="add-expiry" class="input-field" min="${today}" value="${pre && pre.expiryDate ? pre.expiryDate : ''}"></div>
+    </div>
+    <div style="margin-bottom:20px;"><label>Notes (optional)</label><textarea id="add-notes" class="input-field" placeholder="Any additional details..."></textarea></div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;" onclick="addFoodItem()">
+      <i class="fas fa-plus-circle"></i> Add to Inventory
+    </button>
+  </div>`;
+}
+
+function addFoodItem() {
+  const name = document.getElementById('add-name').value.trim();
+  const category = document.getElementById('add-category').value;
+  const storage = document.getElementById('add-storage').value;
+  const qty = parseFloat(document.getElementById('add-qty').value);
+  const unit = document.getElementById('add-unit').value;
+  const expiry = document.getElementById('add-expiry').value;
+  const notes = document.getElementById('add-notes').value.trim();
+  if (!name || !expiry || !qty) return toast('Please fill name, quantity and expiry date', 'error');
+
+  const status = getFoodStatus({ expiryDate: expiry, category, storageCondition: storage }).status;
+  const foods = DB.get('foods');
+  foods.push({
+    id: DB.genId(), userId: state.currentUser.id, name, category,
+    quantity: qty, unit, expiryDate: expiry,
+    addedDate: new Date().toISOString().split('T')[0],
+    storageCondition: storage, status, image: '', notes
+  });
+  DB.set('foods', foods);
+  logActivity('Food Added', `Added ${name} to inventory`);
+  if (status === 'expiring' || status === 'expired') {
+    notifyUser(state.currentUser.id, `${name} is already ${status === 'expired' ? 'expired' : 'expiring soon'}! Consider donating it.`, 'warning');
+  }
+  state._scanResult = null;
+  navigate('my-food');
+  toast(`${name} added to inventory`, 'success');
+}
+
+// ============================================================
+// AI SCANNER (OCR + expiry date detection — FIXED)
+// ============================================================
+const MONTHS = { JAN:1,FEB:2,MAR:3,APR:4,MAY:5,JUN:6,JUL:7,AUG:8,SEP:9,OCT:10,NOV:11,DEC:12 };
+
+function normalizeDateCandidate(raw) {
+  if (!raw) return null;
+  const s = raw.trim();
+  const mk = (y, mo, d) => {
+    if (mo < 1 || mo > 12 || d < 1 || d > 31) return null;
+    const dt = new Date(y, mo - 1, d);
+    return isNaN(dt.getTime()) ? null : dt.toISOString().split('T')[0];
+  };
+  let m = s.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})$/);
+  if (m) return mk(+m[1], +m[2], +m[3]);
+  m = s.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})$/);
+  if (m) {
+    let [a, b] = [+m[1], +m[2]]; let y = +m[3];
+    if (y < 100) y += 2000;
+    if (a > 12) return mk(y, b, a);
+    if (b > 12) return mk(y, a, b);
+    return mk(y, b, a);
+  }
+  m = s.match(/^(\d{1,2})\s*([A-Z]{3})[A-Z]*\s*(\d{2,4})?$/);
+  if (m && MONTHS[m[2]]) {
+    let y = m[3] ? +m[3] : new Date().getFullYear();
+    if (y < 100) y += 2000;
+    return mk(y, MONTHS[m[2]], +m[1]);
+  }
+  m = s.match(/^([A-Z]{3})[A-Z]*\s*(\d{1,2})?\s*,?\s*(\d{2,4})?$/);
+  if (m && MONTHS[m[1]]) {
+    let y = m[3] ? +m[3] : new Date().getFullYear();
+    if (y < 100) y += 2000;
+    return mk(y, MONTHS[m[1]], m[2] ? +m[2] : 1);
+  }
+  return null;
+}
+
+function extractExpiryDate(ocrText) {
+  if (!ocrText) return null;
+  const text = ocrText.toUpperCase();
+  const results = [];
+  let m;
+  const kw = /(?:EXP|EXPIR\w*|BEST\s*(?:BEFORE|BY)?|USE\s*BY|BB[E]?|CONSUME\s*BY)\s*[:.\-]?\s*((?:\d{1,4}|\d{4})[-\/. ](?:\d{1,2}|[A-Z]{3,9})[-\/. ](?:\d{2,4}|\d{1,2})|\d{1,2}\s+[A-Z]{3,9}\s*\d{0,4}|[A-Z]{3,9}\s*\d{1,2}\s*,?\s*\d{2,4})/g;
+  while ((m = kw.exec(text)) !== null) {
+    const norm = normalizeDateCandidate(m[1].trim());
+    if (norm) results.push({ date: norm, confidence: 0.92, raw: m[0].trim() });
+  }
+  const standalone = /\b(\d{1,2}[-\/.]\d{1,2}[-\/.]\d{2,4}|\d{4}[-\/.]\d{1,2}[-\/.]\d{1,2})\b/g;
+  while ((m = standalone.exec(text)) !== null) {
+    const norm = normalizeDateCandidate(m[1]);
+    if (norm) results.push({ date: norm, confidence: 0.55, raw: m[1] });
+  }
+  if (!results.length) return null;
+  results.sort((a, b) => b.confidence - a.confidence);
+  return results[0];
+}
+
+const LABEL_CATEGORY_MAP = [
+  [/banana|apple|orange|fruit|vegetable|lemon|tomato|broccoli|carrot|corn|cucumber|pepper/i, 'Fruits & Vegetables'],
+  [/cheese|milk|yogurt|dairy|butter|egg|cream/i, 'Dairy & Eggs'],
+  [/fish|salmon|chicken|meat|beef|pork|shrimp|seafood/i, 'Meat & Seafood'],
+  [/bread|bagel|toast|donut|pretzel|muffin|cake|croissant|pastry|rice|pasta|noodle|flour|cereal/i, 'Grains & Bread'],
+  [/can\b|bottle|jar|tin\b/i, 'Canned Goods'],
+  [/soda|juice|water|beer|wine|coffee|tea|drink|beverage/i, 'Beverages'],
+  [/chips|cookie|cracker|candy|chocolate|snack|popcorn|fries/i, 'Snacks'],
+  [/sauce|ketchup|mustard|dressing|mayo|salsa|jam|honey|syrup|spice|condiment/i, 'Condiments'],
+  [/ice ?cream|frozen|popsicle/i, 'Frozen Foods'],
+  [/pizza|sandwich|burger|soup|salad|meal|dinner|burrito/i, 'Prepared Meals'],
+];
+
+function guessCategory(label) {
+  for (const [re, cat] of LABEL_CATEGORY_MAP) if (re.test(label)) return cat;
+  return '';
+}
+
+function guessNameFromText(text, fallback) {
+  const lines = text.split(/\n+/).map(l => l.trim()).filter(l => l.length > 2 && /[A-Za-z]{3}/.test(l) && !/^\d+$/.test(l));
+  const skip = /(EXP|EXPIR|BEST|USE\s*BY|BB\b|NET|WT\b|INGREDIENT|KEEP|REFRIG|CONSUME|MRP|PRICE|BARCODE)/i;
+  const good = lines.find(l => !skip.test(l));
+  const name = (good || lines[0] || fallback || '').slice(0, 40);
+  return name ? name.replace(/[^A-Za-z0-9 \-']/g, ' ').trim() : fallback;
+}
+
+let aiScan = { imageData: null, busy: false };
+
+function renderAIScanner() {
+  return `
+  <h2 style="font-size:24px;font-weight:700;margin-bottom:4px;">AI Scanner</h2>
+  <p style="color:var(--muted);font-size:14px;margin-bottom:24px;">Upload a food label photo — AI detects the product, category and expiry date automatically</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+    <div class="card">
+      <h3 style="font-size:15px;font-weight:600;margin-bottom:14px;"><i class="fas fa-camera" style="color:var(--accent);margin-right:6px;"></i>Food Label Image</h3>
+      <div id="scan-dropzone" class="scanning" onclick="document.getElementById('scan-file').click()"
+        style="border:2px dashed var(--border2);border-radius:12px;padding:20px;text-align:center;cursor:pointer;position:relative;overflow:hidden;min-height:260px;display:flex;align-items:center;justify-content:center;background:var(--bg2);">
+        <div class="scan-line" style="display:none;" id="scan-line-el"></div>
+        <img id="scan-preview" style="max-width:100%;max-height:240px;border-radius:8px;display:none;" alt="preview">
+        <div id="scan-placeholder">
+          <i class="fas fa-cloud-upload-alt" style="font-size:40px;color:var(--border2);margin-bottom:12px;"></i>
+          <p style="color:var(--muted);font-size:14px;">Click to upload a food package label</p>
+          <p style="color:var(--muted);font-size:11px;margin-top:6px;">JPG or PNG · Clear photo of the expiry label works best</p>
+        </div>
+      </div>
+      <input type="file" id="scan-file" accept="image/*" style="display:none;" onchange="onScanFile(this)">
+      <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="runAIScan()" id="scan-btn"><i class="fas fa-brain"></i> Scan with AI</button>
+        <button class="btn btn-secondary" onclick="loadSampleLabel()"><i class="fas fa-flask"></i> Try Sample Label</button>
+      </div>
+      <div id="scan-progress" style="margin-top:16px;display:none;">
+        <div class="progress-bar"><div class="progress-fill" id="scan-progress-fill" style="width:0%;background:var(--accent);"></div></div>
+        <p id="scan-progress-text" style="font-size:12px;color:var(--muted);margin-top:8px;">Starting...</p>
+      </div>
+    </div>
+
+    <div class="card" id="scan-results">
+      <h3 style="font-size:15px;font-weight:600;margin-bottom:14px;"><i class="fas fa-clipboard-check" style="color:var(--accent);margin-right:6px;"></i>Detected Details</h3>
+      <p style="color:var(--muted);font-size:13px;">Scan an image to see AI-detected food details here. Detected expiry dates will be highlighted automatically.</p>
+    </div>
+  </div>`;
+}
+
+function onScanFile(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    aiScan.imageData = e.target.result;
+    const img = document.getElementById('scan-preview');
+    const ph = document.getElementById('scan-placeholder');
+    img.src = aiScan.imageData;
+    img.style.display = 'block';
+    if (ph) ph.style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+function loadSampleLabel() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 640; canvas.height = 320;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, 640, 320);
+  ctx.fillStyle = '#111111';
+  ctx.font = 'bold 36px Arial';
+  ctx.fillText('ORGANIC FRESH MILK', 30, 60);
+  ctx.font = '22px Arial';
+  ctx.fillText('1 LITER - PASTEURIZED', 30, 100);
+  // fake barcode
+  ctx.fillRect(30, 130, 200, 60);
+  ctx.fillStyle = '#ffffff';
+  for (let x = 36; x < 224; x += 8) ctx.fillRect(x, 136, 4, 48);
+  ctx.fillStyle = '#111111';
+  ctx.font = 'bold 28px Arial';
+  ctx.fillText('BEST BEFORE: 15 MAR 2026', 30, 235);
+  ctx.font = '22px Arial';
+  ctx.fillText('EXP 2026-03-15', 30, 275);
+  ctx.fillText('KEEP REFRIGERATED', 30, 305);
+  aiScan.imageData = canvas.toDataURL('image/png');
+  const img = document.getElementById('scan-preview');
+  const ph = document.getElementById('scan-placeholder');
+  img.src = aiScan.imageData;
+  img.style.display = 'block';
+  if (ph) ph.style.display = 'none';
+  toast('Sample label loaded — click "Scan with AI"', 'info');
+}
+
+function setScanProgress(pct, msg) {
+  const wrap = document.getElementById('scan-progress');
+  if (!wrap) return;
+  wrap.style.display = 'block';
+  document.getElementById('scan-progress-fill').style.width = pct + '%';
+  document.getElementById('scan-progress-text').textContent = msg;
+}
+
+function setScanLine(active) {
+  const el = document.getElementById('scan-line-el');
+  if (el) el.style.display = active ? 'block' : 'none';
+}
+
+async function runAIScan() {
+  if (aiScan.busy) return;
+  if (!aiScan.imageData) return toast('Please upload a label image first (or click "Try Sample Label")', 'warning');
+  aiScan.busy = true;
+  const btn = document.getElementById('scan-btn');
+  btn.disabled = true; btn.style.opacity = 0.6;
+  setScanLine(true);
+  document.getElementById('scan-results').innerHTML = `
+    <h3 style="font-size:15px;font-weight:600;margin-bottom:14px;"><i class="fas fa-brain" style="color:var(--accent);margin-right:6px;"></i>Analyzing...</h3>
+    <p style="color:var(--muted);font-size:13px;" class="animate-pulse-slow">AI is reading the label. This may take a few seconds.</p>`;
+
+  let detectedName = '', detectedCategory = '', expiryResult = null, ocrText = '', classification = '';
+
+  try {
+    // Step 1: image classification (optional — graceful if offline)
+    setScanProgress(10, 'Loading AI vision model...');
+    try {
+      const model = await mobilenet.load();
+      const imgEl = document.getElementById('scan-preview');
+      const preds = await model.classify(imgEl);
+      classification = preds && preds[0] ? preds[0].className : '';
+      setScanProgress(35, 'Image classified: ' + classification);
+    } catch (e) {
+      setScanProgress(35, 'Vision model unavailable — using OCR only');
+    }
+
+    // Step 2: OCR text extraction
+    setScanProgress(50, 'Reading label text (OCR)...');
+    const imgEl2 = document.getElementById('scan-preview');
+    const result = await Tesseract.recognize(imgEl2, 'eng', {
+      logger: m => {
+        if (m.status === 'recognizing text') setScanProgress(50 + Math.round((m.progress || 0) * 40), 'Reading label text (OCR)... ' + Math.round((m.progress || 0) * 100) + '%');
+      }
+    });
+    ocrText = result.data.text || '';
+    setScanProgress(92, 'Analyzing extracted text...');
+
+    // Step 3: detect expiry date
+    expiryResult = extractExpiryDate(ocrText);
+
+    // Step 4: guess name & category
+    detectedName = guessNameFromText(ocrText, classification.split(',')[0] || '');
+    detectedCategory = guessCategory(classification + ' ' + ocrText);
+  } catch (err) {
+    console.error(err);
+  }
+
+  setScanLine(false);
+  setScanProgress(100, 'Done!');
+  aiScan.busy = false;
+  btn.disabled = false; btn.style.opacity = 1;
+
+  renderScanResults(detectedName, detectedCategory, expiryResult, ocrText, classification);
+}
+
+function renderScanResults(name, category, expiry, ocrText, classification) {
+  const catOptions = CATEGORIES.map(c => `<option ${(category === c) ? 'selected' : ''}>${c}</option>`).join('');
+  document.getElementById('scan-results').innerHTML = `
+    <h3 style="font-size:15px;font-weight:600;margin-bottom:14px;"><i class="fas fa-clipboard-check" style="color:var(--accent);margin-right:6px;"></i>Detected Details</h3>
+
+    ${expiry ? `
+    <div style="background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.3);border-radius:10px;padding:14px;margin-bottom:16px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+        <i class="fas fa-calendar-check" style="color:var(--accent);"></i>
+        <b style="font-size:14px;color:var(--accent);">Expiry Date Detected!</b>
+      </div>
+      <div style="font-size:20px;font-weight:700;font-family:'Space Grotesk';">${formatDate(expiry.date)}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;">Matched: "${esc(expiry.raw)}" · Confidence: ${Math.round(expiry.confidence * 100)}%</div>
+    </div>` : `
+    <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3);border-radius:10px;padding:14px;margin-bottom:16px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <i class="fas fa-exclamation-triangle" style="color:var(--amber);"></i>
+        <span style="font-size:13px;color:var(--amber);">No expiry date found in image — please enter it manually below.</span>
+      </div>
+    </div>`}
+
+    ${classification ? `<p style="font-size:12px;color:var(--muted);margin-bottom:14px;"><i class="fas fa-eye" style="margin-right:4px;"></i>Image recognized as: <b style="color:var(--fg2);">${esc(classification.split(',')[0])}</b></p>` : ''}
+
+    <div style="margin-bottom:14px;"><label>Food Name</label><input id="scan-name" class="input-field" value="${esc(name)}" placeholder="Detected product name"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+      <div><label>Category</label><select id="scan-category" class="input-field">${catOptions}</select></div>
+      <div><label>Expiry Date</label><input type="date" id="scan-expiry" class="input-field" value="${expiry ? expiry.date : ''}"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;">
+      <div><label>Quantity</label><input type="number" id="scan-qty" class="input-field" value="1" min="1"></div>
+      <div><label>Unit</label><select id="scan-unit" class="input-field">${UNITS.map(u => `<option>${u}</option>`).join('')}</select></div>
+    </div>
+    <details style="margin-bottom:16px;">
+      <summary style="font-size:12px;color:var(--muted);cursor:pointer;">View raw OCR text</summary>
+      <pre style="font-size:11px;color:var(--muted);background:var(--bg);padding:12px;border-radius:8px;margin-top:8px;white-space:pre-wrap;max-height:140px;overflow-y:auto;">${esc(ocrText || '(no text extracted)')}</pre>
+    </details>
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-primary" style="flex:1;justify-content:center;" onclick="scanAddToInventory()"><i class="fas fa-plus"></i> Add to Inventory</button>
+      <button class="btn btn-secondary" onclick="navigate('ai-scanner')">Reset</button>
+    </div>`;
+}
+
+function scanAddToInventory() {
+  const name = document.getElementById('scan-name').value.trim();
+  const category = document.getElementById('scan-category').value;
+  const expiry = document.getElementById('scan-expiry').value;
+  const qty = parseFloat(document.getElementById('scan-qty').value) || 1;
+  const unit = document.getElementById('scan-unit').value;
+  if (!name || !expiry) return toast('Please confirm the food name and expiry date', 'error');
+  state._scanResult = { name, category, expiryDate: expiry, quantity: qty, unit, storageCondition: 'Room Temperature' };
+  navigate('add-food');
+  toast('Review details and confirm to add', 'info');
+}
+
+// ============================================================
+// WASTE PREDICTION (FIXED — now actually predicts)
+// ============================================================
+function renderWastePrediction() {
+  const items = DB.get('foods').filter(f => f.userId === state.currentUser.id)
+    .map(f => ({ ...f, info: getFoodStatus(f) }))
+    .filter(f => f.info.days !== null && f.info.days >= 0);
+
+  const atRisk = items.filter(f => f.info.risk >= 40).sort((a, b) => b.info.risk - a.info.risk);
+  const wasteQty = atRisk.reduce((s, f) => s + f.quantity, 0);
+  const avgRisk = items.length ? Math.round(items.reduce((s, f) => s + f.info.risk, 0) / items.length) : 0;
+
+  setTimeout(() => {
+    const ctx = document.getElementById('waste-chart');
+    if (!ctx) return;
+    const top = items.slice(0, 8).sort((a, b) => a.info.days - b.info.days);
+    state.charts.waste = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: top.map(f => f.name.slice(0, 12)),
+        datasets: [
+          { label: 'Days Left', data: top.map(f => f.info.days), backgroundColor: '#34d399', borderRadius: 4 },
+          { label: 'Waste Risk %', data: top.map(f => f.info.risk), backgroundColor: '#f59e0b', borderRadius: 4 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: '#6b8f7a' } } },
+        scales: { x: { ticks: { color: '#6b8f7a' }, grid: { color: '#1e3a2a' } },
+                  y: { ticks: { color: '#6b8f7a' }, grid: { color: '#1e3a2a' } } }
+      }
+    });
+  }, 50);
+
+  return `
+  <h2 style="font-size:24px;font-weight:700;margin-bottom:4px;">Waste Prediction</h2>
+  <p style="color:var(--muted);font-size:14px;margin-bottom:24px;">AI risk forecast based on expiry date, category shelf-life & storage conditions</p>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px;">
+    <div class="stat-card amber"><div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Avg Risk Score</div>
+      <div style="font-size:32px;font-weight:700;color:var(--amber);font-family:'Space Grotesk';">${avgRisk}%</div></div>
+    <div class="stat-card red"><div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Items At Risk</div>
+      <div style="font-size:32px;font-weight:700;color:var(--danger);font-family:'Space Grotesk';">${atRisk.length}</div></div>
+    <div class="stat-card red"><div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Predicted Waste</div>
+      <div style="font-size:32px;font-weight:700;color:var(--danger);font-family:'Space Grotesk';">${wasteQty} <span style="font-size:14px;">units</span></div></div>
+    <div class="stat-card green"><div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Safe Items</div>
+      <div style="font-size:32px;font-weight:700;color:var(--accent);font-family:'Space Grotesk';">${items.length - atRisk.length}</div></div>
+  </div>
+
+  <div class="card" style="margin-bottom:20px;">
+    <h3 style="font-size:15px;font-weight:600;margin-bottom:14px;">Forecast Overview</h3>
+    <div style="height:280px;position:relative;"><canvas id="waste-chart"></canvas></div>
+  </div>
+
+  <div class="card">
+    <h3 style="font-size:15px;font-weight:600;margin-bottom:14px;"><i class="fas fa-exclamation-triangle" style="color:var(--amber);margin-right:6px;"></i>Act Now — Donate Before It Expires</h3>
+    ${atRisk.length === 0 ? '<p style="color:var(--muted);font-size:13px;">No waste risk detected. Great job! 🎉</p>' :
+      atRisk.map(f => `
+      <div style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--border);">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:14px;font-weight:500;">${esc(f.name)} <span style="color:var(--muted);font-size:11px;">· ${f.quantity} ${esc(f.unit)}</span></div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:6px;">
+            <div class="confidence-bar"><div class="confidence-fill" style="width:${f.info.risk}%;background:${f.info.risk > 70 ? 'var(--danger)' : 'var(--amber)'};"></div></div>
+            <span style="font-size:11px;color:var(--muted);min-width:90px;">${f.info.risk}% risk · ${f.info.days}d left</span>
+          </div>
+        </div>
+        <button class="btn btn-amber btn-sm" onclick="quickDonate('${f.id}')"><i class="fas fa-hand-holding-heart"></i> Donate</button>
+      </div>`).join('')}
+  </div>`;
+}
+
+// ============================================================
+// DONATE FOOD
+// ============================================================
+function renderDonate() {
+  const pre = state._prefillDonation;
+  const u = state.currentUser;
+  return `
+  <h2 style="font-size:24px;font-weight:700;margin-bottom:4px;">Donate Food</h2>
+  <p style="color:var(--muted);font-size:14px;margin-bottom:24px;">Post surplus food for NGOs to accept and pick up</p>
+  <div class="card" style="max-width:680px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+      <div><label>Food Name *</label><input id="don-name" class="input-field" placeholder="e.g. Fresh Vegetables Box" value="${pre ? esc(pre.name) : ''}"></div>
+      <div><label>Category *</label><select id="don-cat" class="input-field">${CATEGORIES.map(c => `<option ${pre && pre.category === c ? 'selected' : ''}>${c}</option>`).join('')}</select></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;">
+      <div><label>Quantity *</label><input type="number" id="don-qty" class="input-field" min="1" value="${pre ? pre.quantity : 1}"></div>
+      <div><label>Unit</label><select id="don-unit" class="input-field">${UNITS.map(x => `<option ${pre && pre.unit === x ? 'selected' : ''}>${x}</option>`).join('')}</select></div>
+      <div><label>Expiry Date *</label><input type="date" id="don-expiry" class="input-field" value="${pre ? (pre.expiryDate || '') : ''}"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+      <div><label>Storage Condition</label><select id="don-storage" class="input-field">${STORAGE_CONDITIONS.map(c => `<option ${pre && pre.storageCondition === c ? 'selected' : ''}>${c}</option>`).join('')}</select></div>
+      <div><label>Prepared Date/Time (if applicable)</label><input type="datetime-local" id="don-prepared" class="input-field"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+      <div><label>Pickup Location *</label><input id="don-location" class="input-field" placeholder="Pickup address" value="${esc(u.address || '')}"></div>
+      <div><label>Preferred Pickup Time</label><input type="datetime-local" id="don-time" class="input-field"></div>
+    </div>
+    <div style="margin-bottom:16px;"><label>Additional Info</label><textarea id="don-info" class="input-field" placeholder="Condition, packaging details, etc."></textarea></div>
+    <div style="margin-bottom:20px;"><label>Photo (optional)</label><input type="file" id="don-photo" class="input-field" accept="image/*" onchange="onDonationPhoto(this)"></div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-primary" style="flex:1;justify-content:center;padding:12px;" onclick="postDonation()"><i class="fas fa-hand-holding-heart"></i> Post Donation</button>
+      ${pre ? `<button class="btn btn-secondary" onclick="state._prefillDonation=null;renderApp()">Clear Prefill</button>` : ''}
+    </div>
+  </div>`;
+}
+
+function onDonationPhoto(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => { state._pendingDonationPhoto = e.target.result; };
+  reader.readAsDataURL(file);
+}
+
+function postDonation() {
+  const name = document.getElementById('don-name').value.trim();
+  const qty = parseFloat(document.getElementById('don-qty').value);
+  const expiry = document.getElementById('don-expiry').value;
+  const location = document.getElementById('don-location').value.trim();
+  if (!name || !qty || !expiry || !location) return toast('Please fill all required fields', 'error');
+  const now = new Date().toISOString();
+  const donations = DB.get('donations');
+  donations.unshift({
+    id: DB.genId(), userId: state.currentUser.id, userName: state.currentUser.name,
+    ngoId: '', ngoName: '',
+    foodName: name,
+    quantity: qty, unit: document.getElementById('don-unit').value,
+    category: document.getElementById('don-cat').value,
+    expiryDate: expiry,
+    storageCondition: document.getElementById('don-storage').value,
+    preparedDate: document.getElementById('don-prepared').value,
+    pickupLocation: location,
+    pickupTime: document.getElementById('don-time').value,
+    photo: state._pendingDonationPhoto || '',
+    additionalInfo: document.getElementById('don-info').value.trim(),
+    status: 'posted', createdAt: now, updatedAt: now
+  });
+  DB.set('donations', donations);
+  logActivity('Donation Posted', `Posted ${name} for donation`);
+  DB.get('users').filter(x => x.role === 'ngo' && x.verified).forEach(ngo => {
+    notifyUser(ngo.id, `New donation available: ${name} by ${state.currentUser.name}`, 'info');
+  });
+  state._prefillDonation = null;
+  state._pendingDonationPhoto = null;
+  navigate('my-donations');
+  toast('Donation posted! Verified NGOs have been notified.', 'success');
+}
+
+// ============================================================
+// MY DONATIONS
+// ============================================================
+function renderMyDonations() {
+  const donations = DB.get('donations').filter(d => d.userId === state.currentUser.id)
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  return `
+  <h2 style="font-size:24px;font-weight:700;margin-bottom:4px;">My Donations</h2>
+  <p style="color:var(--muted);font-size:14px;margin-bottom:24px;">Track the status of all your food donations</p>
+  ${donations.length === 0 ? '<div class="card"><p style="color:var(--muted);font-size:14px;text-align:center;padding:30px;">No donations yet. Donate your surplus food!</p></div>' : `
+  <div class="card table-wrap">
+    <table>
+      <thead><tr><th>Food</th><th>Quantity</th><th>NGO</th><th>Status</th><th>Posted</th><th>Actions</th></tr></thead>
+      <tbody>
+        ${donations.map(d => `
+        <tr>
+          <td><b style="color:var(--fg);">${esc(d.foodName)}</b></td>
+          <td>${d.quantity} ${esc(d.unit)}</td>
+          <td>${d.ngoName ? esc(d.ngoName) : '<span style="color:var(--muted);">Awaiting NGO</span>'}</td>
+          <td>${donationBadge(d.status)}</td>
+          <td>${relativeTime(d.createdAt)}</td>
+          <td>
+            <button class="btn btn-secondary btn-sm" onclick="showDonationDetail('${d.id}')"><i class="fas fa-eye"></i></button>
+            ${d.status === 'posted' ? `<button class="btn btn-danger btn-sm" onclick="cancelDonation('${d.id}')"><i class="fas fa-times"></i> Cancel</button>` : ''}
+          </td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>`}`;
+}
+
+function showDonationDetail(id) {
+  const d = DB.get('donations').find(x => x.id === id);
+  if (!d) return;
+  showModal(`
+    <h3 style="font-size:18px;font-weight:700;margin-bottom:6px;">${esc(d.foodName)}</h3>
+    ${donationBadge(d.status)}
+    <div style="margin-top:20px;display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:13px;">
+      <div><span style="color:var(--muted);">Quantity:</span> ${d.quantity} ${esc(d.unit)}</div>
+      <div><span style="color:var(--muted);">Category:</span> ${esc(d.category)}</div>
+      <div><span style="color:var(--muted);">Expiry:</span> ${formatDate(d.expiryDate)}</div>
+      <div><span style="color:var(--muted);">Storage:</span> ${esc(d.storageCondition)}</div>
+      <div><span style="color:var(--muted);">Pickup:</span> ${esc(d.pickupLocation)}</div>
+      <div><span style="color:var(--muted);">Pickup Time:</span> ${d.pickupTime ? formatDateTime(d.pickupTime) : '—'}</div>
+      <div><span style="color:var(--muted);">NGO:</span> ${d.ngoName ? esc(d.ngoName) : 'Not yet accepted'}</div>
+      <div><span style="color:var(--muted);">Posted:</span> ${formatDateTime(d.createdAt)}</div>
+    </div>
+    ${d.additionalInfo ? `<p style="margin-top:14px;font-size:13px;color:var(--fg2);"><span style="color:var(--muted);">Notes:</span> ${esc(d.additionalInfo)}</p>` : ''}
+    ${d.photo ? `<img src="${d.photo}" style="max-width:100%;border-radius:10px;margin-top:14px;">` : ''}
+    <div style="text-align:right;margin-top:20px;"><button class="btn btn-secondary" onclick="closeModal()">Close</button></div>`);
+}
+
+function cancelDonation(id) {
+  const donations = DB.get('donations');
+  const d = donations.find(x => x.id === id);
+  if (!d || d.status !== 'posted') return;
+  d.status = 'cancelled'; d.updatedAt = new Date().toISOString();
+  DB.set('donations', donations);
+  logActivity('Donation Cancelled', `Cancelled ${d.foodName} donation`);
+  renderApp();
+  toast('Donation cancelled', 'info');
+}
+
+// ============================================================
+// MY IMPACT
+// ============================================================
+function renderImpact() {
+  const donations = DB.get('donations').filter(d => d.userId === state.currentUser.id);
+  const completed = donations.filter(d => d.status === 'completed');
+  const totalUnits = completed.reduce((s, d) => s + d.quantity, 0);
+  const meals = Math.round(totalUnits * 1.2);
+  const co2 = Math.round(totalUnits * 2.5 * 10) / 10;
+  const value = Math.round(totalUnits * 3);
+
+  setTimeout(() => {
+    const ctx = document.getElementById('impact-chart');
+    if (!ctx) return;
+    const byCat = {};
+    completed.forEach(d => { byCat[d.category] = (byCat[d.category] || 0) + d.quantity; });
+    const labels = Object.keys(byCat);
+    state.charts.impact = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{ label: 'Units Donated', data: labels.map(l => byCat[l]), backgroundColor: '#34d399', borderRadius: 4 }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { x: { ticks: { color: '#6b8f7a' }, grid: { color: '#1e3a2a' } },
+                  y: { ticks: { color: '#6b8f7a' }, grid: { color: '#1e3a2a' } } }
+      }
+    });
+  }, 50);
+
+  const badges = [
+    { icon: 'fa-seedling', label: 'First Donation', earned: completed.length >= 1 },
+    { icon: 'fa-heart', label: '5 Donations', earned: completed.length >= 5 },
+    { icon: 'fa-star', label: '10 Donations', earned: completed.length >= 10 },
+    { icon: 'fa-globe', label: '100 Units Donated', earned: totalUnits >= 100 },
+  ];
+
+  return `
+  <h2 style="font-size:24px;font-weight:700;margin-bottom:4px;">My Impact</h2>
+  <p style="color:var(--muted);font-size:14px;margin-bottom:24px;">The difference your donations are making</p>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px;">
+    <div class="stat-card green"><div style="font-size:12px;color:var(--muted);margin-bottom:8px;"><i class="fas fa-check-double" style="margin-right:6px;"></i>Completed Donations</div><div style="font-size:32px;font-weight:700;color:var(--accent);font-family:'Space Grotesk';">${completed.length}</div></div>
+    <div class="stat-card green"><div style="font-size:12px;color:var(--muted);margin-bottom:8px;"><i class="fas fa-utensils" style="margin-right:6px;"></i>Est. Meals Provided</div><div style="font-size:32px;font-weight:700;color:var(--accent);font-family:'Space Grotesk';">${meals}</div></div>
+    <div class="stat-card green"><div style="font-size:12px;color:var(--muted);margin-bottom:8px;"><i class="fas fa-cloud" style="margin-right:6px;"></i>CO₂ Saved (kg)</div><div style="font-size:32px;font-weight:700;color:var(--accent);font-family:'Space Grotesk';">${co2}</div></div>
+    <div class="stat-card blue"><div style="font-size:12px;color:var(--muted);margin-bottom:8px;"><i class="fas fa-dollar-sign" style="margin-right:6px;"></i>Est. Value ($)</div><div style="font-size:32px;font-weight:700;color:var(--info);font-family:'Space Grotesk';">${value}</div></div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:2fr 1fr;gap:20px;">
+    <div class="card">
+      <h3 style="font-size:15px;font-weight:600;margin-bottom:14px;">Donations by Category</h3>
+      <div style="height:260px;position:relative;"><canvas id="impact-chart"></canvas></div>
+    </div>
+    <div class="card">
+      <h3 style="font-size:15px;font-weight:600;margin-bottom:14px;">Achievements</h3>
+      ${badges.map(b => `
+      <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);opacity:${b.earned ? 1 : 0.35};">
+        <div style="width:38px;height:38px;border-radius:10px;background:${b.earned ? 'rgba(52,211,153,0.15)' : 'var(--bg2)'};display:flex;align-items:center;justify-content:center;">
+          <i class="fas ${b.icon}" style="color:${b.earned ? 'var(--accent)' : 'var(--muted)'};"></i>
+        </div>
+        <span style="font-size:13px;font-weight:500;">${b.label}</span>
+        ${b.earned ? '<i class="fas fa-check-circle" style="margin-left:auto;color:var(--accent);"></i>' : ''}
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+// ============================================================
+// NGO — AVAILABLE DONATIONS
+// ============================================================
+function renderAvailableDonations() {
+  const available = DB.get('donations').filter(d => d.status === 'posted')
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  return `
+  <h2 style="font-size:24px;font-weight:700;margin-bottom:4px;">Available Donations</h2>
+  <p style="color:var(--muted);font-size:14px;margin-bottom:24px;">Fresh food posted by donors near you — accept to schedule pickup</p>
+  ${available.length === 0 ? '<div class="card"><p style="color:var(--muted);font-size:14px;text-align:center;padding:30px;">No donations available right now. Check back soon!</p></div>' : `
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;">
+    ${available.map(d => {
+      const days = daysUntil(d.expiryDate);
+      return `
+      <div class="card card-glow">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+          <h4 style="font-size:16px;font-weight:600;">${esc(d.foodName)}</h4>
+          ${days !== null && days <= 2 ? '<span class="badge badge-expiring">Expires soon</span>' : '<span class="badge badge-fresh">Good condition</span>'}
+        </div>
+        <div style="font-size:12px;color:var(--muted);display:grid;gap:5px;margin-bottom:14px;">
+          <span><i class="fas fa-user" style="width:16px;margin-right:4px;"></i>${esc(d.userName)}</span>
+          <span><i class="fas fa-box" style="width:16px;margin-right:4px;"></i>${d.quantity} ${esc(d.unit)} · ${esc(d.category)}</span>
+          <span><i class="fas fa-map-marker-alt" style="width:16px;margin-right:4px;"></i>${esc(d.pickupLocation)}</span>
+          <span><i class="fas fa-calendar-times" style="width:16px;margin-right:4px;"></i>Expires: ${formatDate(d.expiryDate)}</span>
+        </div>
+        ${d.additionalInfo ? `<p style="font-size:12px;color:var(--fg2);margin-bottom:14px;font-style:italic;">"${esc(d.additionalInfo)}"</p>` : ''}
+        <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="acceptDonation('${d.id}')"><i class="fas fa-handshake"></i> Accept Donation</button>
+      </div>`;
+    }).join('')}
+  </div>`}`;
+}
+
+function acceptDonation(id) {
+  const donations = DB.get('donations');
+  const d = donations.find(x => x.id === id);
+  if (!d || d.status !== 'posted') return;
+  d.ngoId = state.currentUser.id;
+  d.ngoName = state.currentUser.orgName || state.currentUser.name;
+  d.status = 'accepted';
+  d.updatedAt = new Date().toISOString();
+  DB.set('donations', donations);
+  notifyUser(d.userId, `${d.ngoName} accepted your "${d.foodName}" donation! They will contact you for pickup.`, 'success');
+  logActivity('Donation Accepted', `${d.ngoName} accepted ${d.foodName} from ${d.userName}`);
+  renderApp();
+  toast(`You accepted "${d.foodName}"`, 'success');
+}
+
+// ============================================================
+// NGO — MY ACCEPTANCES
+// ============================================================
+function renderMyAcceptances() {
+  const mine = DB.get('donations').filter(d => d.ngoId === state.currentUser.id && d.status !== 'cancelled')
+    .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+  return `
+  <h2 style="font-size:24px;font-weight:700;margin-bottom:4px;">My Acceptances</h2>
+  <p style="color:var(--muted);font-size:14px;margin-bottom:24px;">Update the delivery status as you progress</p>
+  ${mine.length === 0 ? '<div class="card"><p style="color:var(--muted);font-size:14px;text-align:center;padding:30px;">You haven\'t accepted any donations yet.</p></div>' : `
+  <div class="card table-wrap">
+    <table>
+      <thead><tr><th>Food</th><th>Donor</th><th>Quantity</th><th>Pickup</th><th>Status</th><th>Next Step</th></tr></thead>
+      <tbody>
+        ${mine.map(d => {
+          let next = '';
+          if (d.status === 'accepted') next = `<button class="btn btn-primary btn-sm" onclick="advanceDonation('${d.id}')"><i class="fas fa-truck"></i> Mark Picked Up</button>`;
+          else if (d.status === 'picked_up') next = `<button class="btn btn-primary btn-sm" onclick="advanceDonation('${d.id}')"><i class="fas fa-dolly"></i> Mark Delivered</button>`;
+          else if (d.status === 'delivered') next = `<button class="btn btn-primary btn-sm" onclick="advanceDonation('${d.id}')"><i class="fas fa-check-double"></i> Mark Completed</button>`;
+          else next = '<span style="color:var(--muted);font-size:12px;">Done ✓</span>';
+          return `
+          <tr>
+            <td><b style="color:var(--fg);">${esc(d.foodName)}</b></td>
+            <td>${esc(d.userName)}</td>
+            <td>${d.quantity} ${esc(d.unit)}</td>
+            <td style="font-size:12px;">${esc(d.pickupLocation)}</td>
+            <td>${donationBadge(d.status)}</td>
+            <td>${next}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  </div>`}`;
+}
+
+function advanceDonation(id) {
+  const donations = DB.get('donations');
+  const d = donations.find(x => x.id === id);
+  if (!d) return;
+  const flow = { accepted: 'picked_up', picked_up: 'delivered', delivered: 'completed' };
+  const next = flow[d.status];
+  if (!next) return;
+  d.status = next;
+  d.updatedAt = new Date().toISOString();
+  DB.set('donations', donations);
+  const labels = { picked_up: 'picked up', delivered: 'delivered', completed: 'completed' };
+  notifyUser(d.userId, `Your "${d.foodName}" donation has been ${labels[next]}!`, next === 'completed' ? 'success' : 'info');
+  logActivity('Donation ' + labels[next].charAt(0).toUpperCase() + labels[next].slice(1), `${d.foodName} — ${labels[next]} by ${d.ngoName}`);
+  renderApp();
+  toast(`Marked as ${labels[next]}`, 'success');
+}
+
+// ============================================================
+// NGO — REQUEST FOOD
+// ============================================================
+function renderRequestFood() {
+  const mine = DB.get('requests').filter(r => r.ngoId === state.currentUser.id && r.status === 'open')
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  return `
+  <h2 style="font-size:24px;font-weight:700;margin-bottom:4px;">Request Food</h2>
+  <p style="color:var(--muted);font-size:14px;margin-bottom:24px;">Post what your organization needs — donors can see your requests</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+    <div class="card">
+      <h3 style="font-size:15px;font-weight:600;margin-bottom:14px;">New Request</h3>
+      <div style="margin-bottom:14px;"><label>Food Needed *</label><input id="req-name" class="input-field" placeholder="e.g. Canned Goods"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+        <div><label>Category</label><select id="req-cat" class="input-field">${CATEGORIES.map(c => `<option>${c}</option>`).join('')}</select></div>
+        <div><label>Urgency</label><select id="req-urgency" class="input-field"><option value="high">High</option><option value="medium" selected>Medium</option><option value="low">Low</option></select></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;">
+        <div><label>Quantity *</label><input type="number" id="req-qty" class="input-field" min="1" value="10"></div>
+        <div><label>Unit</label><select id="req-unit" class="input-field">${UNITS.map(u => `<option>${u}</option>`).join('')}</select></div>
+      </div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="createRequest()"><i class="fas fa-hand-paper"></i> Post Request</button>
+    </div>
+    <div class="card">
+      <h3 style="font-size:15px;font-weight:600;margin-bottom:14px;">My Open Requests</h3>
+      ${mine.length === 0 ? '<p style="color:var(--muted);font-size:13px;">No open requests.</p>' : mine.map(r => `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border);">
+        <div>
+          <div style="font-size:14px;font-weight:500;">${esc(r.foodName)}</div>
+          <div style="font-size:11px;color:var(--muted);">${r.quantity} ${esc(r.unit)} · Urgency: ${r.urgency}</div>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="closeRequest('${r.id}')">Close</button>
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function createRequest() {
+  const name = document.getElementById('req-name').value.trim();
+  const qty = parseFloat(document.getElementById('req-qty').value);
+  if (!name || !qty) return toast('Please fill food name and quantity', 'error');
+  const requests = DB.get('requests');
+  requests.unshift({
+    id: DB.genId(), ngoId: state.currentUser.id,
+    ngoName: state.currentUser.orgName || state.currentUser.name,
+    foodName: name, quantity: qty, unit: document.getElementById('req-unit').value,
+    category: document.getElementById('req-cat').value,
+    urgency: document.getElementById('req-urgency').value,
+    status: 'open', createdAt: new Date().toISOString()
+  });
+  DB.set('requests', requests);
+  logActivity('Food Request', `${state.currentUser.orgName || state.currentUser.name} requested ${qty} ${document.getElementById('req-unit').value} of ${name}`);
+  renderApp();
+  toast('Request posted', 'success');
+}
+
+function closeRequest(id) {
+  const requests = DB.get('requests');
+  const r = requests.find(x => x.id === id);
+  if (r) r.status = 'closed';
+  DB.set('requests', requests);
+  renderApp();
+  toast('Request closed', 'info');
+}
+
+// ============================================================
+// NGO — PICKUP SCHEDULE
+// ============================================================
+function renderPickupSchedule() {
+  const mine = DB.get('donations').filter(d => d.ngoId === state.currentUser.id && (d.status === 'accepted' || d.status === 'picked_up'));
+  return `
+  <h2 style="font-size:24px;font-weight:700;margin-bottom:4px;">Pickup Schedule</h2>
+  <p style="color:var(--muted);font-size:14px;margin-bottom:24px;">Manage pickup times for your accepted donations</p>
+  ${mine.length === 0 ? '<div class="card"><p style="color:var(--muted);font-size:14px;text-align:center;padding:30px;">No pickups to schedule. Accept donations first!</p></div>' : `
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;">
+    ${mine.map(d => `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+        <div>
+          <h4 style="font-size:15px;font-weight:600;">${esc(d.foodName)}</h4>
+          <p style="font-size:11px;color:var(--muted);margin-top:2px;">From ${esc(d.userName)} · ${d.quantity} ${esc(d.unit)}</p>
+        </div>
+        ${donationBadge(d.status)}
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:12px;"><i class="fas fa-map-marker-alt" style="margin-right:4px;"></i>${esc(d.pickupLocation)}</p>
+      ${d.status === 'picked_up' ? '<p style="font-size:13px;color:var(--accent);"><i class="fas fa-check-circle" style="margin-right:6px;"></i>Picked up — in transit</p>' : d.pickupTime ?
+        `<p style="font-size:13px;color:var(--fg2);margin-bottom:12px;"><i class="fas fa-clock" style="margin-right:6px;color:var(--amber);"></i>Scheduled: ${formatDateTime(d.pickupTime)}</p>
+         <button class="btn btn-primary btn-sm" onclick="advanceDonation('${d.id}')"><i class="fas fa-check"></i> Confirm Picked Up</button>` :
+        `<div style="display:flex;gap:8px;align-items:center;">
+          <input type="datetime-local" id="pk-${d.id}" class="input-field" style="flex:1;">
+          <button class="btn btn-amber btn-sm" onclick="setPickup('${d.id}')">Set</button>
+        </div>`}
+    </div>`).join('')}
+  </div>`}`;
+}
+
+function setPickup(id) {
+  const val = document.getElementById('pk-' + id).value;
+  if (!val) return toast('Please choose a date & time', 'error');
+  const donations = DB.get('donations');
+  const d = donations.find(x => x.id === id);
+  if (!d) return;
+  d.pickupTime = val;
+  d.updatedAt = new Date().toISOString();
+  DB.set('donations', donations);
+  notifyUser(d.userId, `Pickup for "${d.foodName}" scheduled at ${formatDateTime(val)}`, 'info');
+  renderApp();
+  toast('Pickup scheduled', 'success');
+}
+
+// ============================================================
+// NGO — HISTORY
+// ============================================================
+function renderNgoHistory() {
+  const mine = DB.get('donations').filter(d => d.ngoId === state.currentUser.id && (d.status === 'delivered' || d.status === 'completed'))
+    .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+  const total = mine.reduce((s, d) => s + d.quantity, 0);
+  return `
+  <h2 style="font-size:24px;font-weight:700;margin-bottom:4px;">Donation History</h2>
+  <p style="color:var(--muted);font-size:14px;margin-bottom:24px;">${mine.length} donations · ${total} total units received</p>
+  ${mine.length === 0 ? '<div class="card"><p style="color:var(--muted);font-size:14px;text-align:center;padding:30px;">No completed donations yet.</p></div>' : `
+  <div class="card table-wrap">
+    <table>
+      <thead><tr><th>Food</th><th>Donor</th><th>Quantity</th><th>Category</th><th>Status</th><th>Completed</th></tr></thead>
+      <tbody>
+        ${mine.map(d => `
+        <tr>
+          <td><b style="color:var(--fg);">${esc(d.foodName)}</b></td>
+          <td>${esc(d.userName)}</td>
+          <td>${d.quantity} ${esc(d.unit)}</td>
+          <td>${esc(d.category)}</td>
+          <td>${donationBadge(d.status)}</td>
+          <td>${formatDate(d.updatedAt)}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>`}`;
+}
+
+// ============================================================
+// ADMIN — MANAGE USERS
+// ============================================================
+function renderManageUsers() {
+  const users = DB.get('users');
+  return `
+  <h2 style="font-size:24px;font-weight:700;margin-bottom:4px;">Manage Users</h2>
+  <p style="color:var(--muted);font-size:14px;margin-bottom:24px;">${users.length} registered accounts</p>
+  <div class="card table-wrap">
+    <table>
+      <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Phone</th><th>Status</th><th>Joined</th><th>Actions</th></tr></thead>
+      <tbody>
+        ${users.map(u => `
+        <tr>
+          <td><b style="color:var(--fg);">${esc(u.name)}</b></td>
+          <td>${esc(u.email)}</td>
+          <td><span class="badge ${u.role === 'admin' ? 'badge-unverified' : u.role === 'ngo' ? 'badge-pending' : 'badge-posted'}">${u.role.toUpperCase()}</span></td>
+          <td>${esc(u.phone || '—')}</td>
+          <td>${u.verified ? '<span class="badge badge-verified">Verified</span>' : '<span class="badge badge-unverified">Unverified</span>'}</td>
+          <td>${formatDate(u.createdAt)}</td>
+          <td>
+            ${u.id !== state.currentUser.id ? `<button class="btn btn-danger btn-sm" onclick="deleteUser('${u.id}')"><i class="fas fa-trash"></i></button>` : '<span style="font-size:11px;color:var(--muted);">You</span>'}
+          </td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>`;
+}
+
+function deleteUser(id) {
+  let users = DB.get('users').filter(u => u.id !== id);
+  DB.set('users', users);
+  logActivity('User Deleted', 'Admin removed a user account');
+  renderApp();
+  toast('User deleted', 'info');
+}
+
+// ============================================================
+// ADMIN — VERIFY NGOs
+// ============================================================
+function renderManageNgos() {
+  const ngos = DB.get('users').filter(u => u.role === 'ngo');
+  const pending = ngos.filter(n => !n.verified).length;
+  return `
+  <h2 style="font-size:24px;font-weight:700;margin-bottom:4px;">Verify NGOs</h2>
+  <p style="color:var(--muted);font-size:14px;margin-bottom:24px;">${ngos.length} organizations · ${pending} pending verification</p>
+  <div class="card table-wrap">
+    <table>
+      <thead><tr><th>Organization</th><th>Type</th><th>Contact</th><th>Address</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody>
+        ${ngos.map(n => `
+        <tr>
+          <td><b style="color:var(--fg);">${esc(n.orgName || n.name)}</b></td>
+          <td>${esc(n.orgType || '—')}</td>
+          <td>${esc(n.email)}<br><span style="font-size:11px;color:var(--muted);">${esc(n.phone)}</span></td>
+          <td style="font-size:12px;">${esc(n.address)}</td>
+          <td>${n.verified ? '<span class="badge badge-verified">Verified</span>' : '<span class="badge badge-pending">Pending</span>'}</td>
+          <td>
+            ${n.verified
+              ? `<button class="btn btn-danger btn-sm" onclick="toggleNgoVerify('${n.id}')">Unverify</button>`
+              : `<button class="btn btn-primary btn-sm" onclick="toggleNgoVerify('${n.id}')"><i class="fas fa-check"></i> Verify</button>`}
+          </td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>`;
+}
+
+function toggleNgoVerify(id) {
+  const users = DB.get('users');
+  const ngo = users.find(u => u.id === id);
+  if (!ngo) return;
+  ngo.verified = !ngo.verified;
+  DB.set('users', users);
+  notifyUser(ngo.id, ngo.verified ? 'Your NGO account has been verified! You can now accept donations.' : 'Your NGO verification has been revoked.', ngo.verified ? 'success' : 'warning');
+  logActivity('NGO Verification', `${ngo.orgName} ${ngo.verified ? 'verified' : 'unverified'} by admin`);
+  renderApp();
+  toast(ngo.verified ? 'NGO verified' : 'NGO unverified', 'success');
+}
+
+// ============================================================
+// ADMIN — FOOD RECORDS / DONATIONS / VOLUNTEERS
+// ============================================================
+function renderManageFoods() {
+  const foods = DB.get('foods').map(f => {
+    const owner = DB.get('users').find(u => u.id === f.userId);
+    return { ...f, info: getFoodStatus(f), ownerName: owner ? owner.name : 'Unknown' };
+  }).sort((a, b) => (a.info.days ?? 9999) - (b.info.days ?? 9999));
+  return `
+  <h2 style="font-size:24px;font-weight:700;margin-bottom:4px;">Food Records</h2>
+  <p style="color:var(--muted);font-size:14px;margin-bottom:24px;">All food items tracked across the platform (${foods.length})</p>
+  <div class="card table-wrap">
+    <table>
+      <thead><tr><th>Food</th><th>Owner</th><th>Category</th><th>Qty</th><th>Expiry</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody>
+        ${foods.map(f => `
+        <tr>
+          <td><b style="color:var(--fg);">${esc(f.name)}</b></td>
+          <td>${esc(f.ownerName)}</td>
+          <td>${esc(f.category)}</td>
+          <td>${f.quantity} ${esc(f.unit)}</td>
+          <td>${formatDate(f.expiryDate)}</td>
+          <td>${foodStatusBadge(f)}</td>
+          <td><button class="btn btn-danger btn-sm" onclick="doDeleteFood('${f.id}')"><i class="fas fa-trash"></i></button></td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>`;
+}
+
+function renderManageDonations() {
+  const donations = DB.get('donations').sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  return `
+  <h2 style="font-size:24px;font-weight:700;margin-bottom:4px;">Monitor Donations</h2>
+  <p style="color:var(--muted);font-size:14px;margin-bottom:24px;">All donation activity on the platform (${donations.length})</p>
+  <div class="card table-wrap">
+    <table>
+      <thead><tr><th>Food</th><th>Donor</th><th>NGO</th><th>Qty</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead>
+      <tbody>
+        ${donations.map(d => `
+        <tr>
+          <td><b style="color:var(--fg);">${esc(d.foodName)}</b></td>
+          <td>${esc(d.userName)}</td>
+          <td>${d.ngoName ? esc(d.ngoName) : '—'}</td>
+          <td>${d.quantity} ${esc(d.unit)}</td>
+          <td>${donationBadge(d.status)}</td>
+          <td>${relativeTime(d.createdAt)}</td>
+          <td><button class="btn btn-secondary btn-sm" onclick="showDonationDetail('${d.id}')"><i class="fas fa-eye"></i></button></td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>`;
+}
+
+function renderManageVolunteers() {
+  const vols = DB.get('volunteers');
+  return `
+  <h2 style="font-size:24px;font-weight:700;margin-bottom:4px;">Volunteers</h2>
+  <p style="color:var(--muted);font-size:14px;margin-bottom:24px;">Coordinate pickup volunteers (${vols.filter(v => v.status === 'active').length} active)</p>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:20px;">
+    <div class="card">
+      <h3 style="font-size:15px;font-weight:600;margin-bottom:14px;">Add Volunteer</h3>
+      <div style="margin-bottom:12px;"><label>Name *</label><input id="vol-name" class="input-field" placeholder="Full name"></div>
+      <div style="margin-bottom:12px;"><label>Email *</label><input id="vol-email" class="input-field" placeholder="email@x.com"></div>
+      <div style="margin-bottom:12px;"><label>Phone</label><input id="vol-phone" class="input-field" placeholder="555-0000"></div>
+      <div style="margin-bottom:16px;"><label>Availability</label><select id="vol-avail" class="input-field"><option>Weekdays</option><option>Weekends</option><option>Flexible</option></select></div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="addVolunteer()"><i class="fas fa-user-plus"></i> Add</button>
+    </div>
+    <div class="card table-wrap">
+      <table>
+        <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Availability</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>
+          ${vols.map(v => `
+          <tr>
+            <td><b style="color:var(--fg);">${esc(v.name)}</b></td>
+            <td>${esc(v.email)}</td>
+            <td>${esc(v.phone)}</td>
+            <td>${esc(v.availability)}</td>
+            <td>${v.status === 'active' ? '<span class="badge badge-verified">Active</span>' : '<span class="badge badge-expired">Inactive</span>'}</td>
+            <td><button class="btn btn-secondary btn-sm" onclick="toggleVolunteer('${v.id}')">${v.status === 'active' ? 'Deactivate' : 'Activate'}</button></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+function addVolunteer() {
+  const name = document.getElementById('vol-name').value.trim();
+  const email = document.getElementById('vol-email').value.trim();
+  if (!name || !email) return toast('Please fill name and email', 'error');
+  const vols = DB.get('volunteers');
+  vols.unshift({ id: DB.genId(), name, email, phone: document.getElementById('vol-phone').value.trim(), availability: document.getElementById('vol-avail').value, status: 'active', createdAt: new Date().toISOString() });
+  DB.set('volunteers', vols);
+  logActivity('Volunteer Added', `${name} joined as volunteer`);
+  renderApp();
+  toast('Volunteer added', 'success');
+}
+
+function toggleVolunteer(id) {
+  const vols = DB.get('volunteers');
+  const v = vols.find(x => x.id === id);
+  if (v) v.status = v.status === 'active' ? 'inactive' : 'active';
+  DB.set('volunteers', vols);
+  renderApp();
+  toast('Volunteer status updated', 'info');
+}
+
+// ============================================================
+// ADMIN — REPORTS
+// ============================================================
+function renderReports() {
+  const foods = DB.get('foods');
+  const donations = DB.get('donations');
+  const users = DB.get('users');
+  const expired = foods.filter(f => getFoodStatus(f).status === 'expired').length;
+  const completed = donations.filter(d => d.status === 'completed').length;
+  const savedUnits = donations.filter(d => ['completed','delivered'].includes(d.status)).reduce((s, d) => s + d.quantity, 0);
+
+  setTimeout(() => {
+    const c1 = document.getElementById('rep-chart1');
+    const c2 = document.getElementById('rep-chart2');
+    if (c1) {
+      const byCat = {};
+      foods.forEach(f => { byCat[f.category] = (byCat[f.category] || 0) + 1; });
+      state.charts.rep1 = new Chart(c1, {
+        type: 'bar',
+        data: {
+          labels: Object.keys(byCat),
+          datasets: [{ label: 'Items', data: Object.values(byCat), backgroundColor: '#34d399', borderRadius: 4 }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { x: { ticks: { color: '#6b8f7a', font: { size: 10 } }, grid: { color: '#1e3a2a' } },
+                    y: { ticks: { color: '#6b8f7a' }, grid: { color: '#1e3a2a' } } }
+        }
+      });
+    }
+    if (c2) {
+      state.charts.rep2 = new Chart(c2, {
+        type: 'doughnut',
+        data: {
+          labels: ['Users', 'NGOs', 'Admins'],
+          datasets: [{ data: [users.filter(u => u.role === 'user').length, users.filter(u => u.role === 'ngo').length, users.filter(u => u.role === 'admin').length], backgroundColor: ['#34d399','#f59e0b','#3b82f6'], borderWidth: 0, spacing: 3 }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false, cutout: '65%',
+          plugins: { legend: { position: 'bottom', labels: { color: '#6b8f7a', padding: 12 } } }
+        }
+      });
+    }
+  }, 50);
+
+  return `
+  <h2 style="font-size:24px;font-weight:700;margin-bottom:4px;">Reports & Analytics</h2>
+  <p style="color:var(--muted);font-size:14px;margin-bottom:24px;">Platform-wide food waste & donation insights</p>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px;">
+    <div class="stat-card red"><div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Expired Items (All Users)</div><div style="font-size:32px;font-weight:700;color:var(--danger);font-family:'Space Grotesk';">${expired}</div></div>
+    <div class="stat-card green"><div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Completed Donations</div><div style="font-size:32px;font-weight:700;color:var(--accent);font-family:'Space Grotesk';">${completed}</div></div>
+    <div class="stat-card green"><div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Units Rescued</div><div style="font-size:32px;font-weight:700;color:var(--accent);font-family:'Space Grotesk';">${savedUnits}</div></div>
+    <div class="stat-card blue"><div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Total Accounts</div><div style="font-size:32px;font-weight:700;color:var(--info);font-family:'Space Grotesk';">${users.length}</div></div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:3fr 2fr;gap:20px;">
+    <div class="card">
+      <h3 style="font-size:15px;font-weight:600;margin-bottom:14px;">Food Items by Category</h3>
+      <div style="height:280px;position:relative;"><canvas id="rep-chart1"></canvas></div>
+    </div>
+    <div class="card">
+      <h3 style="font-size:15px;font-weight:600;margin-bottom:14px;">User Distribution</h3>
+      <div style="height:280px;position:relative;"><canvas id="rep-chart2"></canvas></div>
+    </div>
+  </div>`;
+}
+
+// ============================================================
+// ADMIN — COMPLAINTS & ACTIVITY LOG
+// ============================================================
+function renderComplaints() {
+  const complaints = DB.get('complaints').sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const open = complaints.filter(c => c.status === 'open').length;
+  return `
+  <h2 style="font-size:24px;font-weight:700;margin-bottom:4px;">Complaints</h2>
+  <p style="color:var(--muted);font-size:14px;margin-bottom:24px;">${complaints.length} total · ${open} open</p>
+  ${complaints.length === 0 ? '<div class="card"><p style="color:var(--muted);font-size:14px;text-align:center;padding:30px;">No complaints filed.</p></div>' : complaints.map(c => `
+  <div class="card" style="margin-bottom:14px;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
+      <div>
+        <h4 style="font-size:15px;font-weight:600;">${esc(c.subject)}</h4>
+        <p style="font-size:11px;color:var(--muted);margin-top:2px;">By ${esc(c.userName)} · ${formatDateTime(c.createdAt)}</p>
+      </div>
+      ${c.status === 'open' ? '<span class="badge badge-expiring">Open</span>' : '<span class="badge badge-completed">Resolved</span>'}
+    </div>
+    <p style="font-size:13px;color:var(--fg2);margin-bottom:14px;">${esc(c.description)}</p>
+    ${c.status === 'open' ? `<button class="btn btn-primary btn-sm" onclick="resolveComplaint('${c.id}')"><i class="fas fa-check"></i> Mark Resolved</button>` : ''}
+  </div>`).join('')}`;
+}
+
+function resolveComplaint(id) {
+  const complaints = DB.get('complaints');
+  const c = complaints.find(x => x.id === id);
+  if (!c) return;
+  c.status = 'resolved';
+  DB.set('complaints', complaints);
+  notifyUser(c.userId, `Your complaint "${c.subject}" has been resolved.`, 'success');
+  logActivity('Complaint Resolved', `Resolved: ${c.subject}`);
+  renderApp();
+  toast('Complaint resolved', 'success');
+}
+
+function renderActivityLog() {
+  const activity = DB.get('activity');
+  return `
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+    <div>
+      <h2 style="font-size:24px;font-weight:700;">Activity Log</h2>
+      <p style="color:var(--muted);font-size:14px;margin-top:4px;">System-wide audit trail (${activity.length} entries)</p>
+    </div>
+    <button class="btn btn-danger btn-sm" onclick="clearActivity()"><i class="fas fa-trash"></i> Clear Log</button>
+  </div>
+  <div class="card table-wrap">
+    <table>
+      <thead><tr><th>Action</th><th>User</th><th>Details</th><th>Time</th></tr></thead>
+      <tbody>
+        ${activity.length === 0 ? '<tr><td colspan="4" style="text-align:center;color:var(--muted);">No activity recorded</td></tr>' : activity.map(a => `
+        <tr>
+          <td><b style="color:var(--fg);">${esc(a.action)}</b></td>
+          <td>${esc(a.user)}</td>
+          <td>${esc(a.details)}</td>
+          <td style="font-size:12px;color:var(--muted);">${relativeTime(a.timestamp)}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>`;
+}
+
+function clearActivity() {
+  showModal(`
+    <h3 style="font-size:18px;font-weight:700;margin-bottom:12px;">Clear Activity Log?</h3>
+    <p style="color:var(--fg2);font-size:14px;margin-bottom:24px;">All audit entries will be permanently deleted.</p>
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-danger" onclick="DB.set('activity',[]);closeModal();renderApp();toast('Activity log cleared','info');">Clear</button>
+    </div>`);
+}
+
+// ============================================================
+// NOTIFICATIONS
+// ============================================================
+function renderNotifications() {
+  const notifs = DB.get('notifications').filter(n => n.userId === state.currentUser.id)
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const icons = { success: 'fa-check-circle', error: 'fa-times-circle', info: 'fa-info-circle', warning: 'fa-exclamation-triangle', danger: 'fa-times-circle' };
+  const colors = { success: 'var(--accent)', error: 'var(--danger)', info: 'var(--info)', warning: 'var(--amber)', danger: 'var(--danger)' };
+  return `
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+    <div>
+      <h2 style="font-size:24px;font-weight:700;">Notifications</h2>
+      <p style="color:var(--muted);font-size:14px;margin-top:4px;">${notifs.filter(n => !n.read).length} unread</p>
+    </div>
+    ${notifs.length > 0 ? `<button class="btn btn-secondary btn-sm" onclick="markAllRead()"><i class="fas fa-check-double"></i> Mark All Read</button>` : ''}
+  </div>
+  ${notifs.length === 0 ? '<div class="card"><p style="color:var(--muted);font-size:14px;text-align:center;padding:30px;">No notifications yet. Expiry alerts will appear here automatically!</p></div>' : `
+  <div class="card" style="padding:0;overflow:hidden;">
+    ${notifs.map(n => `
+    <div onclick="markNotifRead('${n.id}')" style="display:flex;align-items:center;gap:14px;padding:16px 20px;border-bottom:1px solid var(--border);cursor:pointer;background:${n.read ? 'transparent' : 'rgba(52,211,153,0.04)'};">
+      <div style="width:36px;height:36px;border-radius:10px;background:var(--bg2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <i class="fas ${icons[n.type] || 'fa-bell'}" style="font-size:14px;color:${colors[n.type] || 'var(--muted)'};"></i>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <p style="font-size:14px;${n.read ? 'color:var(--muted);' : 'color:var(--fg);font-weight:500;'}">${esc(n.message)}</p>
+        <p style="font-size:11px;color:var(--muted);margin-top:2px;">${relativeTime(n.createdAt)}</p>
+      </div>
+      ${!n.read ? '<span class="notification-dot"></span>' : ''}
+    </div>`).join('')}
+  </div>`}`;
+}
+
+function markNotifRead(id) {
+  const notifs = DB.get('notifications');
+  const n = notifs.find(x => x.id === id);
+  if (n) n.read = true;
+  DB.set('notifications', notifs);
+  renderApp();
+}
+
+function markAllRead() {
+  const notifs = DB.get('notifications');
+  notifs.forEach(n => { if (n.userId === state.currentUser.id) n.read = true; });
+  DB.set('notifications', notifs);
+  renderApp();
+  toast('All notifications marked as read', 'info');
+}
+
+// ============================================================
+// PROFILE
+// ============================================================
+function renderProfile() {
+  const u = state.currentUser;
+  return `
+  <h2 style="font-size:24px;font-weight:700;margin-bottom:4px;">Profile Settings</h2>
+  <p style="color:var(--muted);font-size:14px;margin-bottom:24px;">Manage your account information</p>
+  <div class="card" style="max-width:560px;">
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:24px;">
+      <div style="width:64px;height:64px;border-radius:16px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;">
+        <i class="fas fa-user" style="font-size:26px;color:#070d0a;"></i>
+      </div>
+      <div>
+        <h3 style="font-size:18px;font-weight:700;">${esc(u.name)}</h3>
+        <p style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">${u.role}${u.verified ? ' · Verified ✓' : ''}</p>
+      </div>
+    </div>
+    ${u.role === 'ngo' ? `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+      <div><label>Organization Name</label><input id="prof-orgname" class="input-field" value="${esc(u.orgName || '')}"></div>
+      <div><label>Org Type</label><select id="prof-orgtype" class="input-field">${['Food Bank','Community Kitchen','Meal Program','Shelter','Other'].map(t => `<option ${u.orgType === t ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
+    </div>` : ''}
+    <div style="margin-bottom:16px;"><label>Full Name</label><input id="prof-name" class="input-field" value="${esc(u.name)}"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+      <div><label>Phone</label><input id="prof-phone" class="input-field" value="${esc(u.phone || '')}"></div>
+      <div><label>New Password (leave blank to keep)</label><input type="password" id="prof-password" class="input-field" placeholder="••••••"></div>
+    </div>
+    <div style="margin-bottom:20px;"><label>Address</label><input id="prof-address" class="input-field" value="${esc(u.address || '')}"></div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;" onclick="saveProfile()"><i class="fas fa-save"></i> Save Changes</button>
+  </div>`;
+}
+
+function saveProfile() {
+  const users = DB.get('users');
+  const u = users.find(x => x.id === state.currentUser.id);
+  if (!u) return;
+  u.name = document.getElementById('prof-name').value.trim() || u.name;
+  u.phone = document.getElementById('prof-phone').value.trim();
+  u.address = document.getElementById('prof-address').value.trim();
+  const pw = document.getElementById('prof-password').value;
+  if (pw) {
+    if (pw.length < 6) return toast('Password must be at least 6 characters', 'error');
+    u.password = pw;
+  }
+  if (u.role === 'ngo') {
+    u.orgName = document.getElementById('prof-orgname').value.trim() || u.orgName;
+    u.orgType = document.getElementById('prof-orgtype').value;
+  }
+  DB.set('users', users);
+  state.currentUser = u;
+  DB.setOne('currentUser', u);
+  renderApp();
+  toast('Profile updated successfully', 'success'); 
+}
+
+// ============================================================
+// INIT
+// ============================================================
+seedData();
+renderApp();
+
+</script>
+<script>
+  // ===== FoodGuard AI — Complaints Add-on =====
+// Lets users and NGOs file complaints. The admin sees them on the existing Complaints page.
+(function () {
+  const _nav = getNavItems, _page = renderPage;
+
+  getNavItems = function () {
+    const it = _nav();
+    if (state.currentUser.role !== 'admin') {
+      const i = it.findIndex(x => x.section === 'Account');
+      it.splice(i + 1, 0, { id: 'my-complaints', icon: 'fa-exclamation-circle', label: 'Complaints' });
+    }
+    return it;
+  };
+  renderPage = function () {
+    return state.currentPage === 'my-complaints' ? renderMyComplaints() : _page();
+  };
+
+  window.renderMyComplaints = function () {
+    const u = state.currentUser;
+    const mine = DB.get('complaints').filter(c => c.userId === u.id)
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    const dons = DB.get('donations').filter(d => d.userId === u.id || d.ngoId === u.id);
+    return `
+    <h2 style="font-size:24px;font-weight:700;margin-bottom:4px;">Complaints</h2>
+    <p style="color:var(--muted);font-size:14px;margin-bottom:24px;">Report a problem and the admin will review it</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+      <div class="card">
+        <h3 style="font-size:15px;font-weight:600;margin-bottom:14px;">Raise a complaint</h3>
+        <div style="margin-bottom:14px;"><label>Issue type *</label>
+          <select id="cp-subject" class="input-field">
+            ${['Delayed pickup', 'Food quality concern', 'Delivery partner issue', 'OTP problem', 'Wrong or missing donation', 'Other'].map(s => `<option>${s}</option>`).join('')}
+          </select></div>
+        <div style="margin-bottom:14px;"><label>Related donation (optional)</label>
+          <select id="cp-don" class="input-field">
+            <option value="">— None —</option>
+            ${dons.map(d => `<option value="${d.id}">${esc(d.foodName)} (${esc(d.status)})</option>`).join('')}
+          </select></div>
+        <div style="margin-bottom:16px;"><label>Describe the problem *</label>
+          <textarea id="cp-desc" class="input-field" placeholder="What happened?"></textarea></div>
+        <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="submitComplaint()"><i class="fas fa-paper-plane"></i> Submit complaint</button>
+      </div>
+      <div class="card">
+        <h3 style="font-size:15px;font-weight:600;margin-bottom:14px;">My complaints</h3>
+        ${mine.length === 0 ? '<p style="color:var(--muted);font-size:13px;">You have not filed any complaints.</p>' : mine.map(c => `
+        <div style="padding:12px 0;border-bottom:1px solid var(--border);">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+            <b style="font-size:14px;">${esc(c.subject)}</b>
+            ${c.status === 'open' ? '<span class="badge badge-expiring">Open</span>' : '<span class="badge badge-completed">Resolved</span>'}
+          </div>
+          <p style="font-size:12px;color:var(--fg2);margin-top:4px;">${esc(c.description)}</p>
+          <p style="font-size:11px;color:var(--muted);margin-top:4px;">${formatDateTime(c.createdAt)}</p>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  };
+
+  window.submitComplaint = function () {
+    const subject = document.getElementById('cp-subject').value;
+    const text = document.getElementById('cp-desc').value.trim();
+    const donId = document.getElementById('cp-don').value;
+    if (!text) return toast('Please describe the problem', 'error');
+    const d = donId ? DB.get('donations').find(x => x.id === donId) : null;
+    const u = state.currentUser;
+    const list = DB.get('complaints');
+    list.unshift({
+      id: DB.genId(), userId: u.id, userName: u.orgName || u.name, subject,
+      description: text + (d ? ` (Donation: ${d.foodName})` : ''),
+      status: 'open', createdAt: new Date().toISOString()
+    });
+    DB.set('complaints', list);
+    DB.get('users').filter(x => x.role === 'admin').forEach(a =>
+      notifyUser(a.id, `New complaint from ${u.orgName || u.name}: ${subject}`, 'warning'));
+    logActivity('Complaint Filed', `${subject} reported by ${u.orgName || u.name}`);
+    renderApp();
+    toast('Complaint submitted. The admin will review it.', 'success');
+  };
+
+  if (state.currentUser) renderApp();
+})();
+</script>
+<script src="foodguard-delivery-email-ALL-IN-ONE.js"></script>
+</body>
+</html>
