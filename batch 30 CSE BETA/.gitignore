@@ -1,0 +1,25 @@
+# =============================================
+# Root-level .gitignore for HMS project
+# =============================================
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# Logs
+*.log
+
+# Environment files (sensitive)
+.env
+.env.*
+!.env.example
+
+# Confidential properties
+**/application.properties
