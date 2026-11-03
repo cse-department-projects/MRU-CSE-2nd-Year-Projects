@@ -1,0 +1,31 @@
+# =============================================
+# Backend .gitignore for Spring Boot project
+# =============================================
+
+# Maven build output
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# Maven wrapper (keep the wrapper itself)
+.mvn/wrapper/maven-wrapper.properties
+
+# IDE files
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+.factorypath
+
+# Logs
+*.log
+logs/
+
+# Application properties with secrets — use application.properties.example instead
+src/main/resources/application.properties
+
+# OS files
+.DS_Store
+Thumbs.db
